@@ -3,17 +3,21 @@ SCHEMA_FILE = $(SCHEMA_DIR)/xyz.shapemachine.castword-gnome.gschema.xml
 SYSTEM_SCHEMA_DIR = /usr/share/glib-2.0/schemas
 VENV = .venv
 PYTHON = $(VENV)/bin/python3
+STAMP = $(VENV)/.installed
 
 .PHONY: run install install-schema uninstall-schema compile-schema clean
 
-run: install compile-schema
+run: $(STAMP) compile-schema
 	GSETTINGS_SCHEMA_DIR=$(SCHEMA_DIR) $(VENV)/bin/castword
 
 $(VENV):
 	uv venv --python 3.14 --system-site-packages $(VENV)
 
-install: $(VENV)
+$(STAMP): $(VENV) pyproject.toml
 	uv pip install --python $(PYTHON) -e .
+	touch $(STAMP)
+
+install: $(STAMP)
 
 compile-schema:
 	glib-compile-schemas $(SCHEMA_DIR)
