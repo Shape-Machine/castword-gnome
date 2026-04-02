@@ -20,7 +20,7 @@ make run
 | Command | Description |
 |---|---|
 | `make run` | Compile schema locally and launch the app |
-| `make install` | Install package in editable mode (`pip install -e .`) |
+| `make install` | Create `.venv` with Python 3.14 and install via `uv pip install -e .` |
 | `make install-schema` | Copy schema system-wide and recompile (required for D-Bus activation) |
 | `make uninstall-schema` | Remove system-wide schema |
 | `make compile-schema` | Recompile schema in `data/` only |
