@@ -11,7 +11,7 @@ compile-schema:
 	glib-compile-schemas $(SCHEMA_DIR)
 
 install:
-	pip install -e .
+	python3 -m pip install -e .
 
 install-schema: compile-schema
 	sudo cp $(SCHEMA_FILE) $(SYSTEM_SCHEMA_DIR)/
