@@ -2,7 +2,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, Gdk, Gtk
 
 
 class CastwordWindow(Adw.Window):
@@ -23,7 +23,7 @@ class CastwordWindow(Adw.Window):
         self.add_controller(key_ctrl)
 
     def _on_key_pressed(self, ctrl, keyval, keycode, state):
-        if keyval == 65307:  # GDK_KEY_Escape
+        if keyval == Gdk.KEY_Escape:
             self.close()
             return True
         return False
