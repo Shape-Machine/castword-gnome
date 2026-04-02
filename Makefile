@@ -10,7 +10,7 @@ run: install compile-schema
 	GSETTINGS_SCHEMA_DIR=$(SCHEMA_DIR) $(VENV)/bin/castword
 
 $(VENV):
-	uv venv --system-site-packages $(VENV)
+	uv venv --python 3.14 --system-site-packages $(VENV)
 
 install: $(VENV)
 	uv pip install --python $(PYTHON) -e .
