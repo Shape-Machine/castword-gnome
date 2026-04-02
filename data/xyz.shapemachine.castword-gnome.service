@@ -1,0 +1,7 @@
+[D-BUS Service]
+Name=xyz.shapemachine.castword-gnome
+# TODO (#22): Replace with absolute path at install time.
+# D-Bus activation does not inherit the user's PATH, so /usr/bin/env will
+# fail unless castword is installed system-wide. The install script or
+# Makefile install-service target should substitute the real path here.
+Exec=/usr/bin/env castword
