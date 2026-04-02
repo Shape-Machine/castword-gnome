@@ -6,7 +6,7 @@ PYTHON = $(VENV)/bin/python3
 
 .PHONY: run install install-schema uninstall-schema compile-schema clean
 
-run: compile-schema
+run: install compile-schema
 	GSETTINGS_SCHEMA_DIR=$(SCHEMA_DIR) $(VENV)/bin/castword
 
 $(VENV):
