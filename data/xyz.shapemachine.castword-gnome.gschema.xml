@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="xyz.shapemachine.castword-gnome" path="/xyz/shapemachine/castword-gnome/">
+
+    <!-- Provider selection -->
+    <key name="active-provider" type="s">
+      <default>"openai"</default>
+      <summary>Active LLM provider</summary>
+      <description>One of: openai, anthropic, gemini, ollama</description>
+    </key>
+
+    <!-- API keys -->
+    <key name="openai-api-key" type="s">
+      <default>""</default>
+      <summary>OpenAI API key</summary>
+    </key>
+    <key name="anthropic-api-key" type="s">
+      <default>""</default>
+      <summary>Anthropic API key</summary>
+    </key>
+    <key name="gemini-api-key" type="s">
+      <default>""</default>
+      <summary>Google Gemini API key</summary>
+    </key>
+
+    <!-- Models -->
+    <key name="openai-model" type="s">
+      <default>"gpt-4o"</default>
+      <summary>OpenAI model name</summary>
+    </key>
+    <key name="anthropic-model" type="s">
+      <default>"claude-opus-4-6"</default>
+      <summary>Anthropic model name</summary>
+    </key>
+    <key name="gemini-model" type="s">
+      <default>"gemini-2.0-flash"</default>
+      <summary>Gemini model name</summary>
+    </key>
+    <key name="ollama-model" type="s">
+      <default>"llama3"</default>
+      <summary>Ollama model name</summary>
+    </key>
+
+    <!-- Ollama -->
+    <key name="ollama-base-url" type="s">
+      <default>"http://localhost:11434"</default>
+      <summary>Ollama base URL</summary>
+    </key>
+
+    <!-- Tones: JSON array of {name, system_prompt} objects -->
+    <key name="tones" type="s">
+      <default>'[
+        {"name": "Formal", "system_prompt": "Rewrite the following text in a formal, professional tone. Preserve the meaning exactly. Return only the rewritten text."},
+        {"name": "Concise", "system_prompt": "Rewrite the following text to be as concise as possible without losing meaning. Cut filler words. Return only the rewritten text."},
+        {"name": "Playful", "system_prompt": "Rewrite the following text in a light, playful, and friendly tone. Keep it clear. Return only the rewritten text."},
+        {"name": "Executive", "system_prompt": "Rewrite the following text in a direct, executive tone suited for senior leadership. Lead with the point. Return only the rewritten text."},
+        {"name": "Friendly", "system_prompt": "Rewrite the following text in a warm, approachable, and conversational tone. Return only the rewritten text."},
+        {"name": "Direct", "system_prompt": "Rewrite the following text to be blunt and direct. No hedging, no filler. Return only the rewritten text."}
+      ]'</default>
+      <summary>Tone definitions (JSON array)</summary>
+      <description>Each entry: {name: string, system_prompt: string}</description>
+    </key>
+
+    <!-- Output behaviour -->
+    <key name="output-mode" type="s">
+      <default>"clipboard+diff"</default>
+      <summary>Output mode after rewrite</summary>
+      <description>One of: clipboard+diff, clipboard, replace</description>
+    </key>
+
+    <!-- Window behaviour -->
+    <key name="dismiss-on-focus-out" type="b">
+      <default>true</default>
+      <summary>Dismiss window when focus is lost</summary>
+    </key>
+
+  </schema>
+</schemalist>
