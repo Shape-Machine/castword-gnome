@@ -19,6 +19,9 @@ class GeminiProvider(BaseProvider):
                     temperature=0.7,
                 ),
             )
+            if not response.text:
+                reason = getattr(response.prompt_feedback, "block_reason", "unknown")
+                raise ProviderError(f"Gemini blocked the response (reason: {reason}).")
             return response.text.strip()
         except genai_errors.ClientError as e:
             if "API_KEY_INVALID" in str(e) or "UNAUTHENTICATED" in str(e):

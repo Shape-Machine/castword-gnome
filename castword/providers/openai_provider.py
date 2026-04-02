@@ -18,7 +18,10 @@ class OpenAIProvider(BaseProvider):
                 ],
                 temperature=0.7,
             )
-            return response.choices[0].message.content.strip()
+            result = (response.choices[0].message.content or "").strip()
+            if not result:
+                raise ProviderError("OpenAI returned an empty response.")
+            return result
         except openai.AuthenticationError as e:
             raise ProviderError(f"OpenAI authentication failed: {e}") from e
         except openai.RateLimitError as e:

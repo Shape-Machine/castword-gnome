@@ -16,7 +16,12 @@ class AnthropicProvider(BaseProvider):
                 system=tone.system_prompt,
                 messages=[{"role": "user", "content": text}],
             )
-            return message.content[0].text.strip()
+            text_block = next(
+                (b for b in message.content if hasattr(b, "text")), None
+            )
+            if not text_block or not text_block.text.strip():
+                raise ProviderError("Anthropic returned an empty response.")
+            return text_block.text.strip()
         except anthropic.AuthenticationError as e:
             raise ProviderError(f"Anthropic authentication failed: {e}") from e
         except anthropic.RateLimitError as e:

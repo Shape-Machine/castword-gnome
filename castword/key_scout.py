@@ -45,8 +45,8 @@ def scan() -> dict[str, str]:
 
     Returns a dict mapping provider name to discovered key value,
     e.g. {"openai": "sk-...", "anthropic": "sk-ant-..."}.
-    Later files in the scan list take precedence over earlier ones,
-    but the first value found for each provider wins (priority order).
+    The live environment is checked first, then files in order —
+    the first value found for each provider wins.
     """
     found: dict[str, str] = {}
 

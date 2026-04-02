@@ -10,7 +10,14 @@ def make_provider(settings) -> BaseProvider:
     Instantiate the active provider from a Gio.Settings object.
     Raises ProviderError if the provider is misconfigured.
     """
-    from gi.repository import Secret
+    try:
+        from gi.repository import Secret
+    except ImportError:
+        raise ProviderError(
+            "libsecret is not installed. Install it with:\n"
+            "  Arch: sudo pacman -S libsecret\n"
+            "  Debian/Ubuntu: sudo apt install libsecret-1-0 gir1.2-secret-1"
+        )
 
     provider_name = settings.get_string("active-provider")
 
@@ -69,9 +76,15 @@ def lookup_secret(provider: str) -> str | None:
     return _get_secret(Secret, provider)
 
 
+_schema_cache = None
+
+
 def _secret_schema(Secret):
-    return Secret.Schema.new(
-        "xyz.shapemachine.castword-gnome",
-        Secret.SchemaFlags.NONE,
-        {"provider": Secret.SchemaAttributeType.STRING},
-    )
+    global _schema_cache
+    if _schema_cache is None:
+        _schema_cache = Secret.Schema.new(
+            "xyz.shapemachine.castword-gnome",
+            Secret.SchemaFlags.NONE,
+            {"provider": Secret.SchemaAttributeType.STRING},
+        )
+    return _schema_cache
