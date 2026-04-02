@@ -10,6 +10,7 @@ uv.lock
 
 # GSettings
 *.gschema.compiled
+gschemas.compiled
 
 # Environment
 .env
