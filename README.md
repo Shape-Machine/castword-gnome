@@ -4,7 +4,7 @@ A GNOME quick-launcher overlay that rewrites your draft text in any tone — for
 
 ## Developers
 
-**Prerequisites:** Python 3.11+, GTK4, Libadwaita (`python-gobject` on Arch / `python3-gi` on Debian).
+**Prerequisites:** Python 3.11+, GTK4, Libadwaita, `uv` (`python-gobject` on Arch / `python3-gi` on Debian).
 
 ```bash
 # 1. Install the package in editable mode

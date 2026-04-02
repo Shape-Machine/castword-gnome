@@ -6,6 +6,7 @@ dist/
 build/
 .venv/
 venv/
+uv.lock
 
 # GSettings
 *.gschema.compiled
