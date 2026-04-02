@@ -11,7 +11,7 @@ dependencies = [
     "httpx>=0.27",
     "openai>=1.30",
     "anthropic>=0.28",
-    "google-generativeai>=0.7",
+    "google-genai>=1.0",
 ]
 
 [project.scripts]
