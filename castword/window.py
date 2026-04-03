@@ -154,6 +154,8 @@ class CastwordWindow(Adw.Window):
 
         tones = tones_from_settings(self._settings)
         for tone in tones:
+            if not tone.enabled:
+                continue
             btn = Gtk.Button(label=tone.name)
             btn.add_css_class("pill")
             btn.set_tooltip_text(tone.system_prompt[:80] + "…")

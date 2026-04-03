@@ -35,17 +35,18 @@
       <summary>Ollama base URL</summary>
     </key>
 
-    <!-- Tones: JSON array of {name, system_prompt} objects -->
+    <!-- Tones: JSON array of {name, system_prompt, enabled} objects -->
     <key name="tones" type="s">
       <default>'[
-        {"name": "Formal", "system_prompt": "Rewrite the following text in a formal, professional tone. Preserve the meaning exactly. Return only the rewritten text."},
-        {"name": "Concise", "system_prompt": "Rewrite the following text to be as concise as possible without losing meaning. Cut filler words. Return only the rewritten text."},
-        {"name": "Playful", "system_prompt": "Rewrite the following text in a light, playful, and friendly tone. Keep it clear. Return only the rewritten text."},
-        {"name": "Executive", "system_prompt": "Rewrite the following text in a direct, executive tone suited for senior leadership. Lead with the point. Return only the rewritten text."},
-{"name": "Direct", "system_prompt": "Rewrite the following text to be blunt and direct. No hedging, no filler. Return only the rewritten text."}
+        {"name": "Formal", "system_prompt": "Rewrite the following text in a formal, professional tone. Preserve the meaning exactly. Return only the rewritten text.", "enabled": true},
+        {"name": "Concise", "system_prompt": "Rewrite the following text to be as concise as possible without losing meaning. Cut filler words. Return only the rewritten text.", "enabled": true},
+        {"name": "Playful", "system_prompt": "Rewrite the following text in a light, playful, and friendly tone. Keep it clear. Return only the rewritten text.", "enabled": false},
+        {"name": "Executive", "system_prompt": "Rewrite the following text in a direct, executive tone suited for senior leadership. Lead with the point. Return only the rewritten text.", "enabled": true},
+        {"name": "Friendly", "system_prompt": "Rewrite the following text in a warm, approachable, and conversational tone. Return only the rewritten text.", "enabled": false},
+        {"name": "Direct", "system_prompt": "Rewrite the following text to be blunt and direct. No hedging, no filler. Return only the rewritten text.", "enabled": true}
       ]'</default>
       <summary>Tone definitions (JSON array)</summary>
-      <description>Each entry: {name: string, system_prompt: string}</description>
+      <description>Each entry: {name: string, system_prompt: string, enabled: bool}</description>
     </key>
 
     <!-- Output behaviour -->

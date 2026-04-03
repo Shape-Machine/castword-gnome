@@ -77,6 +77,11 @@ class CastwordPreferences(Adw.PreferencesWindow):
     def _make_tone_row(self, tone: Tone, index: int, total: int) -> Adw.ActionRow:
         row = Adw.ActionRow(title=tone.name, subtitle=tone.system_prompt[:72] + ("…" if len(tone.system_prompt) > 72 else ""))
 
+        # Enable/disable switch
+        switch = Gtk.Switch(valign=Gtk.Align.CENTER, active=tone.enabled)
+        switch.connect("notify::active", self._on_tone_toggled, index)
+        row.add_suffix(switch)
+
         # Up button
         up_btn = Gtk.Button(icon_name="go-up-symbolic", valign=Gtk.Align.CENTER)
         up_btn.add_css_class("flat")
@@ -106,8 +111,17 @@ class CastwordPreferences(Adw.PreferencesWindow):
 
         return row
 
+    def _on_tone_toggled(self, switch, _param, index: int):
+        tones = tones_from_settings(self._settings)
+        tones[index] = Tone(
+            name=tones[index].name,
+            system_prompt=tones[index].system_prompt,
+            enabled=switch.get_active(),
+        )
+        self._save_tones(tones)
+
     def _save_tones(self, tones: list[Tone]):
-        data = [{"name": t.name, "system_prompt": t.system_prompt} for t in tones]
+        data = [{"name": t.name, "system_prompt": t.system_prompt, "enabled": t.enabled} for t in tones]
         self._settings.set_string("tones", json.dumps(data))
         self._refresh_tone_rows()
 
