@@ -20,6 +20,7 @@ class CastwordWindow(Adw.Window):
 
         self._settings = Gio.Settings(schema_id="xyz.shapemachine.castword-gnome")
         self._busy: bool = False
+        self._prefs_open: bool = False
 
         self._build_ui()
         self._connect_signals()
@@ -33,11 +34,26 @@ class CastwordWindow(Adw.Window):
         self._toast_overlay = Adw.ToastOverlay()
         self.set_content(self._toast_overlay)
 
+        # ── Toolbar view with header bar ──────────────────────────────
+        toolbar_view = Adw.ToolbarView()
+        self._toast_overlay.set_child(toolbar_view)
+
+        header_bar = Adw.HeaderBar()
+        header_bar.add_css_class("flat")
+
+        gear_btn = Gtk.Button(icon_name="preferences-system-symbolic")
+        gear_btn.add_css_class("flat")
+        gear_btn.set_tooltip_text("Preferences")
+        gear_btn.connect("clicked", self._on_open_preferences)
+        header_bar.pack_end(gear_btn)
+
+        toolbar_view.add_top_bar(header_bar)
+
         outer = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
             spacing=0,
         )
-        self._toast_overlay.set_child(outer)
+        toolbar_view.set_content(outer)
 
         # ── Error banner ──────────────────────────────────────────────
         self._banner = Adw.Banner(title="", revealed=False)
@@ -138,6 +154,8 @@ class CastwordWindow(Adw.Window):
 
         tones = tones_from_settings(self._settings)
         for tone in tones:
+            if not tone.enabled:
+                continue
             btn = Gtk.Button(label=tone.name)
             btn.add_css_class("pill")
             btn.set_tooltip_text(tone.system_prompt[:80] + "…")
@@ -164,6 +182,22 @@ class CastwordWindow(Adw.Window):
         self._input_buffer.connect("changed", self._on_input_changed)
 
     # ------------------------------------------------------------------ #
+    # Preferences
+    # ------------------------------------------------------------------ #
+
+    def _on_open_preferences(self, btn):
+        from castword.preferences import CastwordPreferences
+        self._prefs_open = True
+        prefs = CastwordPreferences(transient_for=self, modal=False)
+        prefs.connect("close-request", self._on_preferences_closed)
+        prefs.present()
+
+    def _on_preferences_closed(self, prefs):
+        self._prefs_open = False
+        self._rebuild_tone_buttons()
+        return False
+
+    # ------------------------------------------------------------------ #
     # Event handlers
     # ------------------------------------------------------------------ #
 
@@ -174,7 +208,7 @@ class CastwordWindow(Adw.Window):
         return False
 
     def _on_focus_out(self, ctrl):
-        if self._settings.get_boolean("dismiss-on-focus-out") and not self._busy:
+        if self._settings.get_boolean("dismiss-on-focus-out") and not self._busy and not self._prefs_open:
             self.get_application().quit()
 
     def _on_input_changed(self, buf):
@@ -268,11 +302,13 @@ class CastwordWindow(Adw.Window):
     # ------------------------------------------------------------------ #
 
     def _copy_to_clipboard(self, text: str):
+        from gi.repository import GObject
         display = Gdk.Display.get_default()
         if display is None:
             return
         clipboard = display.get_clipboard()
-        clipboard.set_text(text, -1)
+        val = GObject.Value(GObject.TYPE_STRING, text)
+        clipboard.set_content(Gdk.ContentProvider.new_for_value(val))
         toast = Adw.Toast(title="Copied!", timeout=2)
         self._toast_overlay.add_toast(toast)
 

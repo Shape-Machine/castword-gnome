@@ -6,6 +6,7 @@ from dataclasses import dataclass
 class Tone:
     name: str
     system_prompt: str
+    enabled: bool = True
 
 
 class ProviderError(Exception):

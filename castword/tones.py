@@ -29,6 +29,7 @@ def default_tones() -> list[Tone]:
                 "Rewrite the following text in a light, playful, and friendly tone. "
                 "Keep it clear. Return only the rewritten text."
             ),
+            enabled=False,
         ),
         Tone(
             name="Executive",
@@ -43,6 +44,7 @@ def default_tones() -> list[Tone]:
                 "Rewrite the following text in a warm, approachable, and conversational "
                 "tone. Return only the rewritten text."
             ),
+            enabled=False,
         ),
         Tone(
             name="Direct",
@@ -71,7 +73,8 @@ def tones_from_settings(settings) -> list[Tone]:
             continue
         name = item.get("name", "").strip()
         prompt = item.get("system_prompt", "").strip()
+        enabled = item.get("enabled", True)
         if name and prompt:
-            tones.append(Tone(name=name, system_prompt=prompt))
+            tones.append(Tone(name=name, system_prompt=prompt, enabled=bool(enabled)))
 
     return tones or default_tones()
