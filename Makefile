@@ -28,7 +28,7 @@ install: install-service install-desktop install-schema
 	@echo "castword installed. Run 'scripts/setup-shortcut.sh' to register the keyboard shortcut."
 
 install-service: $(STAMP)
-	@CASTWORD_BIN=$$($(VENV)/bin/python3 -c "import shutil; print(shutil.which('castword') or '$(VENV)/bin/castword')"); \
+	@CASTWORD_BIN=$$($(VENV)/bin/python3 -c "import shutil; print(shutil.which('castword') or '$(abspath $(VENV))/bin/castword')"); \
 	mkdir -p $(DBUS_SERVICE_DIR); \
 	sed "s|Exec=.*|Exec=$$CASTWORD_BIN|" $(SERVICE_SRC) > $(DBUS_SERVICE_DIR)/xyz.shapemachine.castword-gnome.service; \
 	echo "Installed D-Bus service with Exec=$$CASTWORD_BIN"
