@@ -10,13 +10,6 @@ from castword.providers.base import Tone
 def default_tones() -> list[Tone]:
     return [
         Tone(
-            name="Formal",
-            system_prompt=(
-                "Rewrite the following text in a formal, professional tone. "
-                "Preserve the meaning exactly. Return only the rewritten text."
-            ),
-        ),
-        Tone(
             name="Concise",
             system_prompt=(
                 "Rewrite the following text to be as concise as possible without "
@@ -24,18 +17,24 @@ def default_tones() -> list[Tone]:
             ),
         ),
         Tone(
-            name="Playful",
+            name="Direct",
             system_prompt=(
-                "Rewrite the following text in a light, playful, and friendly tone. "
-                "Keep it clear. Return only the rewritten text."
+                "Rewrite the following text to be blunt and direct. No hedging, no "
+                "filler. Return only the rewritten text."
             ),
-            enabled=False,
         ),
         Tone(
-            name="Executive",
+            name="Flirty",
             system_prompt=(
-                "Rewrite the following text in a direct, executive tone suited for "
-                "senior leadership. Lead with the point. Return only the rewritten text."
+                "Rewrite the following text in a flirty, charming tone. Keep it tasteful "
+                "and fun. Return only the rewritten text."
+            ),
+        ),
+        Tone(
+            name="Formal",
+            system_prompt=(
+                "Rewrite the following text in a formal, professional tone. "
+                "Preserve the meaning exactly. Return only the rewritten text."
             ),
         ),
         Tone(
@@ -47,11 +46,12 @@ def default_tones() -> list[Tone]:
             enabled=False,
         ),
         Tone(
-            name="Direct",
+            name="Playful",
             system_prompt=(
-                "Rewrite the following text to be blunt and direct. No hedging, no "
-                "filler. Return only the rewritten text."
+                "Rewrite the following text in a light, playful, and friendly tone. "
+                "Keep it clear. Return only the rewritten text."
             ),
+            enabled=False,
         ),
     ]
 
