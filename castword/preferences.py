@@ -228,7 +228,8 @@ class CastwordPreferences(Adw.PreferencesWindow):
         provider_model = Gtk.StringList.new(_PROVIDER_LABELS)
         self._provider_combo.set_model(provider_model)
         active = self._settings.get_string("active-provider")
-        self._provider_combo.set_selected(_PROVIDERS.index(active) if active in _PROVIDERS else 0)
+        active = active if active in _PROVIDERS else _PROVIDERS[0]
+        self._provider_combo.set_selected(_PROVIDERS.index(active))
         self._provider_combo.connect("notify::selected", self._on_provider_changed)
         selector_group.add(self._provider_combo)
 
@@ -263,7 +264,11 @@ class CastwordPreferences(Adw.PreferencesWindow):
         else:
             key_entry = Adw.PasswordEntryRow(title="API Key")
             self._prefill_key(provider_id, key_entry)
-            key_entry.connect("changed", self._on_key_changed, provider_id)
+            # Save on Enter (apply) or focus-out, not on every keystroke
+            key_entry.connect("apply", self._on_key_changed, provider_id)
+            focus_ctrl = Gtk.EventControllerFocus()
+            focus_ctrl.connect("leave", lambda _ctrl, e=key_entry, p=provider_id: self._on_key_changed(e, p))
+            key_entry.add_controller(focus_ctrl)
             group.add(key_entry)
 
         model_key = f"{provider_id}-model"
@@ -318,7 +323,7 @@ class CastwordPreferences(Adw.PreferencesWindow):
     def _on_test_connection(self, btn, provider_id: str):
         from castword.providers import make_provider
         try:
-            provider = make_provider(self._settings)
+            provider = make_provider(self._settings, provider_id=provider_id)
         except Exception as exc:
             self._on_test_done(btn, False, str(exc))
             return

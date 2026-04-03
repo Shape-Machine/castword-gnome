@@ -1,5 +1,8 @@
 import gi
-gi.require_version("Secret", "1")
+try:
+    gi.require_version("Secret", "1")
+except ValueError:
+    pass  # libsecret not available; make_provider will raise a friendly ProviderError
 
 from castword.providers.base import BaseProvider, ProviderError, Tone
 from castword.providers.openai_provider import OpenAIProvider
@@ -8,21 +11,22 @@ from castword.providers.gemini_provider import GeminiProvider
 from castword.providers.ollama_provider import OllamaProvider
 
 
-def make_provider(settings) -> BaseProvider:
+def make_provider(settings, provider_id: str | None = None) -> BaseProvider:
     """
     Instantiate the active provider from a Gio.Settings object.
+    Pass provider_id to override the active-provider setting.
     Raises ProviderError if the provider is misconfigured.
     """
     try:
         from gi.repository import Secret
-    except ImportError:
+    except (ImportError, ValueError):
         raise ProviderError(
             "libsecret is not installed. Install it with:\n"
             "  Arch: sudo pacman -S libsecret\n"
             "  Debian/Ubuntu: sudo apt install libsecret-1-0 gir1.2-secret-1"
         )
 
-    provider_name = settings.get_string("active-provider")
+    provider_name = provider_id or settings.get_string("active-provider")
 
     if provider_name == "openai":
         key = _get_secret(Secret, "openai") or ""
