@@ -10,6 +10,7 @@ from gi.repository import Adw, GLib, Gio
 # binary basename ("castword") and GNOME Shell cannot match the window
 # to xyz.shapemachine.castword-gnome.desktop or its icon.
 GLib.set_prgname("xyz.shapemachine.castword-gnome")
+GLib.set_application_name("Castword")
 
 
 class CastwordApplication(Adw.Application):
