@@ -14,7 +14,6 @@ class CastwordApplication(Adw.Application):
         )
 
     def do_activate(self):
-        # Window import deferred to avoid circular imports at module level
         from castword.window import CastwordWindow
 
         win = self.get_active_window()
