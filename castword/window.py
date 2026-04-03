@@ -205,10 +205,18 @@ class CastwordWindow(Adw.Window):
     # ------------------------------------------------------------------ #
 
     def _rewrite_thread(self, text: str, tone):
-        try:
+        async def _run():
             from castword.providers import make_provider
             provider = make_provider(self._settings)
-            result = asyncio.run(provider.rewrite(text, tone))
+            try:
+                return await provider.rewrite(text, tone)
+            finally:
+                aclose = getattr(provider, "aclose", None)
+                if callable(aclose):
+                    await aclose()
+
+        try:
+            result = asyncio.run(_run())
             GLib.idle_add(self._on_rewrite_done, text, result)
         except Exception as exc:
             GLib.idle_add(self._on_rewrite_error, str(exc))
@@ -259,7 +267,7 @@ class CastwordWindow(Adw.Window):
         if display is None:
             return
         clipboard = display.get_clipboard()
-        clipboard.set(text)
+        clipboard.set_text(text, -1)
         toast = Adw.Toast(title="Copied!", timeout=2)
         self._toast_overlay.add_toast(toast)
 

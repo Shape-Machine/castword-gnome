@@ -62,8 +62,13 @@ def tones_from_settings(settings) -> list[Tone]:
     except (json.JSONDecodeError, TypeError):
         return default_tones()
 
+    if not isinstance(items, list):
+        return default_tones()
+
     tones = []
     for item in items:
+        if not isinstance(item, dict):
+            continue
         name = item.get("name", "").strip()
         prompt = item.get("system_prompt", "").strip()
         if name and prompt:
