@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="data/icons/hicolor/scalable/apps/xyz.shapemachine.castword-gnome.svg" width="120" alt="castword icon" />
+</p>
+
 # castword
 
 A GNOME quick-launcher overlay that rewrites your draft text in any tone — formal, concise, playful, executive, and more — via a single keypress.
