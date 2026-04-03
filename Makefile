@@ -1,6 +1,7 @@
 SCHEMA_DIR = data
 SCHEMA_FILE = $(SCHEMA_DIR)/xyz.shapemachine.castword-gnome.gschema.xml
-SYSTEM_SCHEMA_DIR = /usr/share/glib-2.0/schemas
+SYSTEM_SCHEMA_DIR  = /usr/share/glib-2.0/schemas
+SYSTEM_ICONS_DIR   = /usr/share/icons/hicolor
 VENV = .venv
 PYTHON = $(VENV)/bin/python3
 STAMP = $(VENV)/.installed
@@ -14,9 +15,9 @@ METAINFO_DIR     = $(HOME)/.local/share/metainfo
 SERVICE_SRC = data/xyz.shapemachine.castword-gnome.service
 DESKTOP_SRC = data/xyz.shapemachine.castword-gnome.desktop
 
-.PHONY: run install install-service install-desktop install-schema install-icons install-metainfo uninstall-schema uninstall-icons uninstall-metainfo compile-schema clean
+.PHONY: run install install-service install-desktop install-schema install-icons install-icons-system install-metainfo uninstall-schema uninstall-icons uninstall-metainfo compile-schema clean
 
-run: $(STAMP) compile-schema install-icons install-desktop
+run: $(STAMP) compile-schema install-icons install-icons-system install-desktop
 	GSETTINGS_SCHEMA_DIR=$(SCHEMA_DIR) gsettings reset xyz.shapemachine.castword-gnome shortcut-prompted 2>/dev/null || true
 	$(VENV)/bin/python3 -c "from castword.shortcuts import unregister_castword_shortcut; unregister_castword_shortcut()" 2>/dev/null || true
 	GSETTINGS_SCHEMA_DIR=$(SCHEMA_DIR) $(VENV)/bin/castword
@@ -75,9 +76,21 @@ uninstall-metainfo:
 compile-schema:
 	glib-compile-schemas $(SCHEMA_DIR)
 
-install-schema: compile-schema
+install-schema: compile-schema install-icons-system
 	sudo cp $(SCHEMA_FILE) $(SYSTEM_SCHEMA_DIR)/
 	sudo glib-compile-schemas $(SYSTEM_SCHEMA_DIR)
+
+install-icons-system:
+	@for size in 16x16 22x22 24x24 32x32 48x48 64x64 96x96 128x128 256x256 512x512; do \
+		sudo mkdir -p $(SYSTEM_ICONS_DIR)/$$size/apps; \
+		sudo cp $(ICONS_SRC_DIR)/$$size/apps/xyz.shapemachine.castword-gnome.png \
+		        $(SYSTEM_ICONS_DIR)/$$size/apps/; \
+	done
+	sudo mkdir -p $(SYSTEM_ICONS_DIR)/scalable/apps
+	sudo cp $(ICONS_SRC_DIR)/scalable/apps/xyz.shapemachine.castword-gnome.svg \
+	        $(SYSTEM_ICONS_DIR)/scalable/apps/
+	sudo gtk-update-icon-cache -f -t $(SYSTEM_ICONS_DIR)
+	@echo "Installed icons to system path."
 
 uninstall-schema:
 	sudo rm -f $(SYSTEM_SCHEMA_DIR)/xyz.shapemachine.castword-gnome.gschema.xml
