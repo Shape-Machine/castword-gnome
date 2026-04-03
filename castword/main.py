@@ -3,7 +3,14 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gio
+from gi.repository import Adw, GLib, Gio
+
+# Set prgname to the full app ID so GTK uses it as the Wayland
+# xdg_toplevel::app_id, allowing GNOME Shell to match the window to
+# xyz.shapemachine.castword-gnome.desktop and display "Castword" in
+# Alt+Tab instead of the raw binary name or app ID.
+GLib.set_prgname("xyz.shapemachine.castword-gnome")
+GLib.set_application_name("Castword")
 
 
 class CastwordApplication(Adw.Application):
