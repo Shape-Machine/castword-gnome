@@ -25,6 +25,9 @@ class CastwordWindow(Adw.Window):
         self._build_ui()
         self._connect_signals()
 
+        if not self._settings.get_boolean("shortcut-prompted"):
+            GLib.idle_add(self._prompt_shortcut_setup)
+
     # ------------------------------------------------------------------ #
     # UI construction
     # ------------------------------------------------------------------ #
@@ -197,19 +200,84 @@ class CastwordWindow(Adw.Window):
         self._rebuild_tone_buttons()
         return False
 
+    def _prompt_shortcut_setup(self):
+        from castword.shortcuts import find_castword_shortcut
+        self._settings.set_boolean("shortcut-prompted", True)
+        _, binding = find_castword_shortcut()
+        if binding is not None:
+            return GLib.SOURCE_REMOVE  # already configured
+
+        self._prefs_open = True
+        dialog = Adw.AlertDialog(
+            heading="Set up keyboard shortcut?",
+            body="Register Super+Shift+W to open castword from anywhere.",
+        )
+        dialog.add_response("skip", "Not Now")
+        dialog.add_response("setup", "Set Up")
+        dialog.set_response_appearance("setup", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response("setup")
+        dialog.connect("response", self._on_shortcut_prompt_response)
+        dialog.present(self)
+        return GLib.SOURCE_REMOVE
+
+    def _on_shortcut_prompt_response(self, dialog, response):
+        self._prefs_open = False
+        if response != "setup":
+            return
+        from castword.shortcuts import find_conflicting_shortcut, format_binding, DEFAULT_BINDING
+        conflict_path, conflict_name = find_conflicting_shortcut(DEFAULT_BINDING)
+        if conflict_path:
+            self._show_shortcut_conflict_dialog(conflict_path, conflict_name, format_binding(DEFAULT_BINDING))
+        else:
+            self._do_register_shortcut()
+
+    def _show_shortcut_conflict_dialog(self, conflict_path: str, conflict_name: str, binding_label: str):
+        self._prefs_open = True
+        dialog = Adw.AlertDialog(
+            heading="Shortcut already in use",
+            body=f"{binding_label} is currently used by "{conflict_name}". Replace it with castword?",
+        )
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("replace", "Replace")
+        dialog.set_response_appearance("replace", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.connect("response", self._on_conflict_response, conflict_path)
+        dialog.present(self)
+
+    def _on_conflict_response(self, dialog, response, conflict_path: str):
+        self._prefs_open = False
+        if response != "replace":
+            return
+        from castword.shortcuts import clear_shortcut_binding
+        clear_shortcut_binding(conflict_path)
+        self._do_register_shortcut()
+
+    def _do_register_shortcut(self):
+        from castword.shortcuts import register_castword_shortcut
+        if not register_castword_shortcut():
+            self._show_banner("Could not register shortcut — set it up in GNOME Settings → Keyboard.")
+
     # ------------------------------------------------------------------ #
     # Event handlers
     # ------------------------------------------------------------------ #
 
     def _on_key_pressed(self, ctrl, keyval, keycode, state):
         if keyval == Gdk.KEY_Escape:
-            self.get_application().quit()
+            self._dismiss()
             return True
         return False
 
     def _on_focus_out(self, ctrl):
         if self._settings.get_boolean("dismiss-on-focus-out") and not self._busy and not self._prefs_open:
-            self.get_application().quit()
+            self._dismiss()
+
+    def _dismiss(self):
+        """Hide the window (keeping the process resident for fast re-activation)."""
+        if not self._settings.get_boolean("keep-text-on-dismiss"):
+            self._input_buffer.set_text("")
+            self._diff_buffer.set_text("")
+            self._diff_scroll.set_visible(False)
+            self._hide_banner()
+        self.set_visible(False)
 
     def _on_input_changed(self, buf):
         # Hide diff panel when input is cleared

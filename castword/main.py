@@ -12,14 +12,17 @@ class CastwordApplication(Adw.Application):
             application_id="xyz.shapemachine.castword-gnome",
             flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
         )
+        self._window = None
 
     def do_activate(self):
         from castword.window import CastwordWindow
 
-        win = self.get_active_window()
-        if win is None:
-            win = CastwordWindow(application=self)
-        win.present()
+        if self._window is None:
+            self._window = CastwordWindow(application=self)
+            # Keep the process resident after the window is hidden so
+            # D-Bus re-activation can re-present it instantly.
+            self.hold()
+        self._window.present()
 
 
 def main():

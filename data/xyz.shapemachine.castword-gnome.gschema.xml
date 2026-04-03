@@ -62,5 +62,17 @@
       <summary>Dismiss window when focus is lost</summary>
     </key>
 
+    <key name="keep-text-on-dismiss" type="b">
+      <default>false</default>
+      <summary>Keep input text when window is dismissed</summary>
+      <description>When false (default), input and diff are cleared each time the window is hidden.</description>
+    </key>
+
+    <key name="shortcut-prompted" type="b">
+      <default>false</default>
+      <summary>Whether the keyboard shortcut setup dialog has been shown</summary>
+      <description>Set to true after the first-run shortcut prompt is shown, so it is never repeated.</description>
+    </key>
+
   </schema>
 </schemalist>
