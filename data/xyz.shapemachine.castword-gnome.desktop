@@ -6,5 +6,6 @@ Icon=xyz.shapemachine.castword-gnome
 Type=Application
 Categories=Utility;
 Keywords=text;rewrite;tone;AI;LLM;
+StartupWMClass=xyz.shapemachine.castword-gnome
 StartupNotify=false
 DBusActivatable=true
