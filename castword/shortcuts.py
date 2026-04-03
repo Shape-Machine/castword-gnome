@@ -49,6 +49,34 @@ def find_castword_shortcut() -> tuple[str | None, str | None]:
     return None, None
 
 
+def find_conflicting_shortcut(binding: str) -> tuple[str | None, str | None]:
+    """Return (slot_path, name) of any non-castword custom shortcut using this binding, or (None, None)."""
+    try:
+        media_keys = Gio.Settings.new(_SCHEMA)
+        slots = media_keys.get_strv("custom-keybindings")
+    except Exception:
+        return None, None
+
+    for slot in slots:
+        try:
+            s = Gio.Settings.new_with_path(_BINDING_SCHEMA, slot)
+            if s.get_string("binding") == binding and "castword" not in s.get_string("command"):
+                return slot, s.get_string("name")
+        except Exception:
+            continue
+
+    return None, None
+
+
+def clear_shortcut_binding(slot_path: str) -> None:
+    """Clear the binding on a custom shortcut slot (used when replacing a conflict)."""
+    try:
+        s = Gio.Settings.new_with_path(_BINDING_SCHEMA, slot_path)
+        s.set_string("binding", "")
+    except Exception:
+        pass
+
+
 def register_castword_shortcut(binding: str = _DEFAULT_BINDING) -> bool:
     """Register (or update) the castword shortcut. Returns True on success."""
     try:

@@ -224,6 +224,34 @@ class CastwordWindow(Adw.Window):
         self._prefs_open = False
         if response != "setup":
             return
+        from castword.shortcuts import find_conflicting_shortcut, format_binding, _DEFAULT_BINDING
+        conflict_path, conflict_name = find_conflicting_shortcut(_DEFAULT_BINDING)
+        if conflict_path:
+            self._show_shortcut_conflict_dialog(conflict_path, conflict_name, format_binding(_DEFAULT_BINDING))
+        else:
+            self._do_register_shortcut()
+
+    def _show_shortcut_conflict_dialog(self, conflict_path: str, conflict_name: str, binding_label: str):
+        self._prefs_open = True
+        dialog = Adw.AlertDialog(
+            heading="Shortcut already in use",
+            body=f"{binding_label} is currently used by "{conflict_name}". Replace it with castword?",
+        )
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("replace", "Replace")
+        dialog.set_response_appearance("replace", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.connect("response", self._on_conflict_response, conflict_path)
+        dialog.present(self)
+
+    def _on_conflict_response(self, dialog, response, conflict_path: str):
+        self._prefs_open = False
+        if response != "replace":
+            return
+        from castword.shortcuts import clear_shortcut_binding
+        clear_shortcut_binding(conflict_path)
+        self._do_register_shortcut()
+
+    def _do_register_shortcut(self):
         from castword.shortcuts import register_castword_shortcut
         if not register_castword_shortcut():
             self._show_banner("Could not register shortcut — set it up in GNOME Settings → Keyboard.")
