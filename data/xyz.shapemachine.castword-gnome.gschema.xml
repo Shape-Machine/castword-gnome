@@ -62,5 +62,11 @@
       <summary>Dismiss window when focus is lost</summary>
     </key>
 
+    <key name="keep-text-on-dismiss" type="b">
+      <default>false</default>
+      <summary>Keep input text when window is dismissed</summary>
+      <description>When false (default), input and diff are cleared each time the window is hidden.</description>
+    </key>
+
   </schema>
 </schemalist>
