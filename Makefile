@@ -7,10 +7,14 @@ STAMP = $(VENV)/.installed
 
 DBUS_SERVICE_DIR = $(HOME)/.local/share/dbus-1/services
 APPLICATIONS_DIR = $(HOME)/.local/share/applications
-SERVICE_SRC = data/xyz.shapemachine.castword-gnome.service
-DESKTOP_SRC = data/xyz.shapemachine.castword-gnome.desktop
+ICONS_SRC_DIR    = data/icons/hicolor
+ICONS_DEST_DIR   = $(HOME)/.local/share/icons/hicolor
+METAINFO_SRC     = data/xyz.shapemachine.castword-gnome.metainfo.xml
+METAINFO_DIR     = $(HOME)/.local/share/metainfo
+SERVICE_SRC      = data/xyz.shapemachine.castword-gnome.service
+DESKTOP_SRC      = data/xyz.shapemachine.castword-gnome.desktop
 
-.PHONY: run install install-service install-desktop install-schema uninstall-schema compile-schema clean
+.PHONY: run install install-service install-desktop install-icons uninstall-icons install-metainfo uninstall-metainfo install-schema uninstall-schema compile-schema clean
 
 run: $(STAMP) compile-schema
 	GSETTINGS_SCHEMA_DIR=$(SCHEMA_DIR) gsettings reset xyz.shapemachine.castword-gnome shortcut-prompted 2>/dev/null || true
@@ -24,7 +28,7 @@ $(STAMP): $(VENV) pyproject.toml
 	uv pip install --python $(PYTHON) -e .
 	touch $(STAMP)
 
-install: install-service install-desktop install-schema
+install: install-service install-desktop install-schema install-icons install-metainfo
 	@echo "castword installed. Run 'scripts/setup-shortcut.sh' to register the keyboard shortcut."
 
 install-service: $(STAMP)
@@ -38,6 +42,35 @@ install-desktop:
 	cp $(DESKTOP_SRC) $(APPLICATIONS_DIR)/
 	update-desktop-database $(APPLICATIONS_DIR) 2>/dev/null || true
 	@echo "Installed desktop file."
+
+install-icons:
+	@for size in 16x16 22x22 24x24 32x32 48x48 64x64 96x96 128x128 256x256 512x512; do \
+		mkdir -p $(ICONS_DEST_DIR)/$$size/apps; \
+		cp $(ICONS_SRC_DIR)/$$size/apps/xyz.shapemachine.castword-gnome.png \
+		   $(ICONS_DEST_DIR)/$$size/apps/; \
+	done
+	mkdir -p $(ICONS_DEST_DIR)/scalable/apps
+	cp $(ICONS_SRC_DIR)/scalable/apps/xyz.shapemachine.castword-gnome.svg \
+	   $(ICONS_DEST_DIR)/scalable/apps/
+	gtk-update-icon-cache -f -t $(ICONS_DEST_DIR) 2>/dev/null || true
+	@echo "Installed icons."
+
+uninstall-icons:
+	rm -f $(ICONS_DEST_DIR)/scalable/apps/xyz.shapemachine.castword-gnome.svg
+	@for size in 16x16 22x22 24x24 32x32 48x48 64x64 96x96 128x128 256x256 512x512; do \
+		rm -f $(ICONS_DEST_DIR)/$$size/apps/xyz.shapemachine.castword-gnome.png; \
+	done
+	gtk-update-icon-cache -f -t $(ICONS_DEST_DIR) 2>/dev/null || true
+	@echo "Uninstalled icons."
+
+install-metainfo:
+	mkdir -p $(METAINFO_DIR)
+	cp $(METAINFO_SRC) $(METAINFO_DIR)/
+	@echo "Installed AppStream metainfo."
+
+uninstall-metainfo:
+	rm -f $(METAINFO_DIR)/xyz.shapemachine.castword-gnome.metainfo.xml
+	@echo "Uninstalled AppStream metainfo."
 
 compile-schema:
 	glib-compile-schemas $(SCHEMA_DIR)

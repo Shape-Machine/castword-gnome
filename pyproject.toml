@@ -6,13 +6,33 @@ build-backend = "setuptools.build_meta"
 name = "castword-gnome"
 version = "0.1.0"
 description = "GNOME overlay for LLM-powered text tone rewriting"
+readme = "README.md"
 requires-python = ">=3.11"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Sri Rang", email = "sri@shapemachine.xyz"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: X11 Applications :: GTK",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: Utilities",
+    "Topic :: Text Processing",
+    "License :: Other/Proprietary License",
+]
 dependencies = [
     "httpx>=0.27",
     "openai>=1.30",
     "anthropic>=0.28",
     "google-genai>=1.0",
 ]
+
+[project.urls]
+Homepage = "https://shapemachine.xyz/castword"
+Repository = "https://github.com/Shape-Machine/castword-gnome"
+"Bug Tracker" = "https://github.com/Shape-Machine/castword-gnome/issues"
 
 [project.scripts]
 castword = "castword.main:main"
