@@ -14,6 +14,7 @@ DESKTOP_SRC = data/xyz.shapemachine.castword-gnome.desktop
 
 run: $(STAMP) compile-schema
 	GSETTINGS_SCHEMA_DIR=$(SCHEMA_DIR) gsettings reset xyz.shapemachine.castword-gnome shortcut-prompted 2>/dev/null || true
+	$(VENV)/bin/python3 -c "from castword.shortcuts import unregister_castword_shortcut; unregister_castword_shortcut()" 2>/dev/null || true
 	GSETTINGS_SCHEMA_DIR=$(SCHEMA_DIR) $(VENV)/bin/castword
 
 $(VENV):

@@ -72,6 +72,27 @@ def register_castword_shortcut(binding: str = _DEFAULT_BINDING) -> bool:
         return False
 
 
+def unregister_castword_shortcut() -> bool:
+    """Remove the castword shortcut entry. Returns True on success."""
+    try:
+        media_keys = Gio.Settings.new(_SCHEMA)
+        existing = media_keys.get_strv("custom-keybindings")
+        to_remove = []
+        for slot in existing:
+            try:
+                s = Gio.Settings.new_with_path(_BINDING_SCHEMA, slot)
+                if "castword" in s.get_string("command"):
+                    to_remove.append(slot)
+            except Exception:
+                continue
+        if not to_remove:
+            return True
+        media_keys.set_strv("custom-keybindings", [s for s in existing if s not in to_remove])
+        return True
+    except Exception:
+        return False
+
+
 def format_binding(binding: str | None) -> str:
     """Return a human-readable label for a GSettings binding string."""
     if not binding:
