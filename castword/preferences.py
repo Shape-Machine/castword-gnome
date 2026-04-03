@@ -272,7 +272,7 @@ class CastwordPreferences(Adw.PreferencesWindow):
         return group, key_entry, model_entry
 
     def _prefill_key(self, provider_id: str, entry: Adw.PasswordEntryRow):
-        from castword.providers import lookup_secret
+        from castword.providers import lookup_secret, store_secret
         from castword import key_scout
         existing = lookup_secret(provider_id)
         if existing:
@@ -280,7 +280,9 @@ class CastwordPreferences(Adw.PreferencesWindow):
             return
         discovered = key_scout.scan()
         if provider_id in discovered:
-            entry.set_text(discovered[provider_id])
+            key = discovered[provider_id]
+            entry.set_text(key)
+            store_secret(provider_id, key)  # persist to keyring on first discovery
 
     def _on_key_changed(self, entry, provider_id: str):
         key = entry.get_text().strip()
