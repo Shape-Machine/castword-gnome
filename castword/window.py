@@ -300,11 +300,13 @@ class CastwordWindow(Adw.Window):
     # ------------------------------------------------------------------ #
 
     def _copy_to_clipboard(self, text: str):
+        from gi.repository import GObject
         display = Gdk.Display.get_default()
         if display is None:
             return
         clipboard = display.get_clipboard()
-        clipboard.set_text(text, -1)
+        val = GObject.Value(GObject.TYPE_STRING, text)
+        clipboard.set_content(Gdk.ContentProvider.new_for_value(val))
         toast = Adw.Toast(title="Copied!", timeout=2)
         self._toast_overlay.add_toast(toast)
 
