@@ -5,7 +5,6 @@
   <!-- CC0 is required for the metainfo file itself regardless of the app's license -->
   <metadata_license>CC0-1.0</metadata_license>
 
-  <!-- TODO: replace with actual SPDX license identifier once license is decided -->
   <project_license>LicenseRef-proprietary</project_license>
 
   <name>Castword</name>
