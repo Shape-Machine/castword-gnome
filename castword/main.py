@@ -12,9 +12,11 @@ class CastwordApplication(Adw.Application):
             application_id="xyz.shapemachine.castword-gnome",
             flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
         )
+        # Keep the process alive between window activations so D-Bus
+        # re-activation re-presents the window instead of cold-starting.
+        self.hold()
 
     def do_activate(self):
-        # Window import deferred to avoid circular imports at module level
         from castword.window import CastwordWindow
 
         win = self.get_active_window()
