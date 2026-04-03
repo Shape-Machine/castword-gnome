@@ -207,6 +207,7 @@ class CastwordWindow(Adw.Window):
         if binding is not None:
             return GLib.SOURCE_REMOVE  # already configured
 
+        self._prefs_open = True
         dialog = Adw.AlertDialog(
             heading="Set up keyboard shortcut?",
             body="Register Super+Shift+C to open castword from anywhere.",
@@ -220,6 +221,7 @@ class CastwordWindow(Adw.Window):
         return GLib.SOURCE_REMOVE
 
     def _on_shortcut_prompt_response(self, dialog, response):
+        self._prefs_open = False
         if response != "setup":
             return
         from castword.shortcuts import register_castword_shortcut
