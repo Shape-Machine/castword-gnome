@@ -14,7 +14,7 @@
 
 set -euo pipefail
 
-BINDING="${BINDING:-<Super><Shift>c}"
+BINDING="${BINDING:-<Super>space}"
 SHORTCUT_NAME="castword"
 
 # Resolve the castword binary — full path required because D-Bus activation

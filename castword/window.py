@@ -210,7 +210,7 @@ class CastwordWindow(Adw.Window):
         self._prefs_open = True
         dialog = Adw.AlertDialog(
             heading="Set up keyboard shortcut?",
-            body="Register Super+Shift+C to open castword from anywhere.",
+            body="Register Super+Space to open castword from anywhere.",
         )
         dialog.add_response("skip", "Not Now")
         dialog.add_response("setup", "Set Up")
