@@ -391,6 +391,21 @@ class CastwordPreferences(Adw.PreferencesWindow):
                             Gio.SettingsBindFlags.DEFAULT)
         dismiss_group.add(dismiss_row)
 
+        shortcut_group = Adw.PreferencesGroup(title="Keyboard Shortcut")
+        page.add(shortcut_group)
+
+        from castword.shortcuts import find_castword_shortcut, format_binding
+        _, binding = find_castword_shortcut()
+        shortcut_row = Adw.ActionRow(
+            title="Global Shortcut",
+            subtitle=format_binding(binding),
+        )
+        open_kb_btn = Gtk.Button(label="Open Keyboard Settings", valign=Gtk.Align.CENTER)
+        open_kb_btn.add_css_class("flat")
+        open_kb_btn.connect("clicked", self._on_open_keyboard_settings)
+        shortcut_row.add_suffix(open_kb_btn)
+        shortcut_group.add(shortcut_row)
+
         # STT placeholder (Phase 2)
         stt_group = Adw.PreferencesGroup(title="Voice Input (Phase 2)")
         page.add(stt_group)
@@ -409,3 +424,9 @@ class CastwordPreferences(Adw.PreferencesWindow):
     def _on_output_mode_changed(self, combo, _param):
         modes = ["clipboard+diff", "clipboard", "replace"]
         self._settings.set_string("output-mode", modes[combo.get_selected()])
+
+    def _on_open_keyboard_settings(self, btn):
+        try:
+            Gio.AppInfo.launch_default_for_uri("settings://keyboard", None)
+        except Exception:
+            pass

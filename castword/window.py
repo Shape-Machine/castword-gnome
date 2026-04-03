@@ -25,6 +25,9 @@ class CastwordWindow(Adw.Window):
         self._build_ui()
         self._connect_signals()
 
+        if not self._settings.get_boolean("shortcut-prompted"):
+            GLib.idle_add(self._prompt_shortcut_setup)
+
     # ------------------------------------------------------------------ #
     # UI construction
     # ------------------------------------------------------------------ #
@@ -196,6 +199,32 @@ class CastwordWindow(Adw.Window):
         self._prefs_open = False
         self._rebuild_tone_buttons()
         return False
+
+    def _prompt_shortcut_setup(self):
+        from castword.shortcuts import find_castword_shortcut
+        self._settings.set_boolean("shortcut-prompted", True)
+        _, binding = find_castword_shortcut()
+        if binding is not None:
+            return GLib.SOURCE_REMOVE  # already configured
+
+        dialog = Adw.AlertDialog(
+            heading="Set up keyboard shortcut?",
+            body="Register Super+Shift+C to open castword from anywhere.",
+        )
+        dialog.add_response("skip", "Not Now")
+        dialog.add_response("setup", "Set Up")
+        dialog.set_response_appearance("setup", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response("setup")
+        dialog.connect("response", self._on_shortcut_prompt_response)
+        dialog.present(self)
+        return GLib.SOURCE_REMOVE
+
+    def _on_shortcut_prompt_response(self, dialog, response):
+        if response != "setup":
+            return
+        from castword.shortcuts import register_castword_shortcut
+        if not register_castword_shortcut():
+            self._show_banner("Could not register shortcut — set it up in GNOME Settings → Keyboard.")
 
     # ------------------------------------------------------------------ #
     # Event handlers
