@@ -19,7 +19,7 @@ class CastwordWindow(Adw.Window):
         self.set_resizable(False)
 
         self._settings = Gio.Settings(schema_id="xyz.shapemachine.castword-gnome")
-        self._rewrite_result: str | None = None
+        self._busy: bool = False
 
         self._build_ui()
         self._connect_signals()
@@ -174,7 +174,7 @@ class CastwordWindow(Adw.Window):
         return False
 
     def _on_focus_out(self, ctrl):
-        if self._settings.get_boolean("dismiss-on-focus-out"):
+        if self._settings.get_boolean("dismiss-on-focus-out") and not self._busy:
             self.get_application().quit()
 
     def _on_input_changed(self, buf):
@@ -183,7 +183,6 @@ class CastwordWindow(Adw.Window):
         if not buf.get_text(start, end, False).strip():
             self._diff_scroll.set_visible(False)
             self._diff_buffer.set_text("")
-            self._rewrite_result = None
 
     def _on_tone_clicked(self, btn, tone):
         start, end = self._input_buffer.get_bounds()
@@ -191,12 +190,21 @@ class CastwordWindow(Adw.Window):
         if not text:
             return
 
+        # Build the provider on the main thread — GSettings and libsecret
+        # reads must not happen from a background thread.
+        try:
+            from castword.providers import make_provider
+            provider = make_provider(self._settings)
+        except Exception as exc:
+            self._show_banner(str(exc))
+            return
+
         self._set_busy(True)
         self._hide_banner()
 
         threading.Thread(
             target=self._rewrite_thread,
-            args=(text, tone),
+            args=(text, tone, provider),
             daemon=True,
         ).start()
 
@@ -204,10 +212,8 @@ class CastwordWindow(Adw.Window):
     # Async rewrite — runs in background thread
     # ------------------------------------------------------------------ #
 
-    def _rewrite_thread(self, text: str, tone):
+    def _rewrite_thread(self, text: str, tone, provider):
         async def _run():
-            from castword.providers import make_provider
-            provider = make_provider(self._settings)
             try:
                 return await provider.rewrite(text, tone)
             finally:
@@ -222,7 +228,6 @@ class CastwordWindow(Adw.Window):
             GLib.idle_add(self._on_rewrite_error, str(exc))
 
     def _on_rewrite_done(self, original: str, rewritten: str):
-        self._rewrite_result = rewritten
         mode = self._settings.get_string("output-mode")
 
         self._copy_to_clipboard(rewritten)
@@ -251,8 +256,8 @@ class CastwordWindow(Adw.Window):
     def _render_diff(self, original: str, rewritten: str):
         self._diff_buffer.set_text("")
         tokens = word_diff(original, rewritten)
-        insert_pos = self._diff_buffer.get_end_iter()
         for token, tag in tokens:
+            insert_pos = self._diff_buffer.get_end_iter()
             if tag == "equal":
                 self._diff_buffer.insert(insert_pos, token)
             else:
@@ -276,6 +281,7 @@ class CastwordWindow(Adw.Window):
     # ------------------------------------------------------------------ #
 
     def _set_busy(self, busy: bool):
+        self._busy = busy
         for btn in self._tone_buttons:
             btn.set_sensitive(not busy)
         self._spinner.set_visible(busy)
