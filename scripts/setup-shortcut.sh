@@ -14,10 +14,17 @@
 
 set -euo pipefail
 
-APP_ID="xyz.shapemachine.castword-gnome"
 BINDING="${BINDING:-<Super><Shift>c}"
 SHORTCUT_NAME="castword"
-COMMAND="gio launch ${APP_ID}"
+
+# Resolve the castword binary — full path required because D-Bus activation
+# runs in a minimal environment without the user's PATH.
+CASTWORD_BIN=$(command -v castword 2>/dev/null || true)
+if [[ -z "$CASTWORD_BIN" ]]; then
+    echo "Error: castword not found on PATH. Run 'make install' first." >&2
+    exit 1
+fi
+COMMAND="$CASTWORD_BIN"
 
 SCHEMA="org.gnome.settings-daemon.plugins.media-keys"
 KEY="custom-keybindings"

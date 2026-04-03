@@ -4,14 +4,30 @@ All functions fail silently if the GNOME settings-daemon schema is absent
 (e.g. non-GNOME desktops).
 """
 
+import shutil
+import sys
+from pathlib import Path
+
 from gi.repository import Gio
 
 _SCHEMA = "org.gnome.settings-daemon.plugins.media-keys"
 _BINDING_SCHEMA = "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
 _BASE_PATH = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/"
-_COMMAND = "gio launch xyz.shapemachine.castword-gnome"
 _DEFAULT_BINDING = "<Super><Shift>c"
 _SHORTCUT_NAME = "castword"
+
+
+def _resolve_castword_bin() -> str:
+    """Return the absolute path to the castword binary."""
+    # Check same directory as the running Python interpreter first (venv case)
+    venv_bin = Path(sys.executable).parent / "castword"
+    if venv_bin.exists():
+        return str(venv_bin)
+    # Fall back to whatever is on PATH
+    on_path = shutil.which("castword")
+    if on_path:
+        return on_path
+    return "castword"  # last resort
 
 
 def find_castword_shortcut() -> tuple[str | None, str | None]:
@@ -36,6 +52,7 @@ def find_castword_shortcut() -> tuple[str | None, str | None]:
 def register_castword_shortcut(binding: str = _DEFAULT_BINDING) -> bool:
     """Register (or update) the castword shortcut. Returns True on success."""
     try:
+        command = _resolve_castword_bin()
         media_keys = Gio.Settings.new(_SCHEMA)
         existing = media_keys.get_strv("custom-keybindings")
 
@@ -61,7 +78,7 @@ def register_castword_shortcut(binding: str = _DEFAULT_BINDING) -> bool:
 
         s = Gio.Settings.new_with_path(_BINDING_SCHEMA, target_path)
         s.set_string("name", _SHORTCUT_NAME)
-        s.set_string("command", _COMMAND)
+        s.set_string("command", command)
         s.set_string("binding", binding)
 
         if target_path not in existing:
