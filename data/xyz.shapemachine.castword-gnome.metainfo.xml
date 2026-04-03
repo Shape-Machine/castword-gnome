@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>xyz.shapemachine.castword-gnome</id>
+
+  <!-- CC0 is required for the metainfo file itself regardless of the app's license -->
+  <metadata_license>CC0-1.0</metadata_license>
+
+  <!-- TODO: replace with actual SPDX license identifier once license is decided -->
+  <project_license>LicenseRef-proprietary</project_license>
+
+  <name>Castword</name>
+  <summary>Rewrite text in any tone with a keypress</summary>
+
+  <description>
+    <p>
+      Castword is a lightweight GNOME overlay that rewrites your text using AI.
+      Press a keyboard shortcut from anywhere, paste or type your text, pick a
+      tone — Formal, Casual, Concise, or one you define — and the rewritten
+      result is copied to your clipboard instantly.
+    </p>
+    <p>
+      Supports OpenAI, Anthropic Claude, Google Gemini, and local Ollama models.
+      API keys are stored securely in the GNOME keyring. The window dismisses
+      itself on focus loss so it stays out of your way.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">xyz.shapemachine.castword-gnome.desktop</launchable>
+
+  <url type="homepage">https://shapemachine.xyz/castword</url>
+  <url type="bugtracker">https://github.com/Shape-Machine/castword-gnome/issues</url>
+  <url type="vcs-browser">https://github.com/Shape-Machine/castword-gnome</url>
+  <url type="contribute">https://github.com/Shape-Machine/castword-gnome</url>
+  <url type="help">https://github.com/Shape-Machine/castword-gnome</url>
+  <url type="faq">https://github.com/Shape-Machine/castword-gnome</url>
+  <!-- TODO: add url type="contact" once shapemachine.xyz/castword has a contact page (must be a web URL, not mailto) -->
+  <url type="donation">https://buy.stripe.com/9B68wQgat5kIgSBbXjes006</url>
+  <!-- TODO: add url type="translate" when applicable -->
+
+  <developer id="xyz.shapemachine">
+    <name>Sri Rang</name>
+  </developer>
+
+  <!-- OARS rating: network access for AI API calls, no user-generated content hosted -->
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-info">mild</content_attribute>
+  </content_rating>
+
+  <releases>
+    <!-- TODO: update version and date on each release -->
+    <release version="0.1.0" date="2026-04-03">
+      <description>
+        <p>Initial release.</p>
+      </description>
+    </release>
+  </releases>
+
+  <!-- TODO: add <screenshots> before Flathub submission (required by Flathub, optional for local installs) -->
+
+  <categories>
+    <category>Utility</category>
+    <category>TextTools</category>
+  </categories>
+
+  <keywords>
+    <keyword>text</keyword>
+    <keyword>rewrite</keyword>
+    <keyword>tone</keyword>
+    <keyword>AI</keyword>
+    <keyword>LLM</keyword>
+    <keyword>writing</keyword>
+    <keyword>clipboard</keyword>
+  </keywords>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+
+  <recommends>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </recommends>
+</component>
