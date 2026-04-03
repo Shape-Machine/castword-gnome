@@ -224,10 +224,10 @@ class CastwordWindow(Adw.Window):
         self._prefs_open = False
         if response != "setup":
             return
-        from castword.shortcuts import find_conflicting_shortcut, format_binding, _DEFAULT_BINDING
-        conflict_path, conflict_name = find_conflicting_shortcut(_DEFAULT_BINDING)
+        from castword.shortcuts import find_conflicting_shortcut, format_binding, DEFAULT_BINDING
+        conflict_path, conflict_name = find_conflicting_shortcut(DEFAULT_BINDING)
         if conflict_path:
-            self._show_shortcut_conflict_dialog(conflict_path, conflict_name, format_binding(_DEFAULT_BINDING))
+            self._show_shortcut_conflict_dialog(conflict_path, conflict_name, format_binding(DEFAULT_BINDING))
         else:
             self._do_register_shortcut()
 

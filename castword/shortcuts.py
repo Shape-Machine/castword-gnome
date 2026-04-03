@@ -13,7 +13,7 @@ from gi.repository import Gio
 _SCHEMA = "org.gnome.settings-daemon.plugins.media-keys"
 _BINDING_SCHEMA = "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
 _BASE_PATH = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/"
-_DEFAULT_BINDING = "<Super><Shift>w"
+DEFAULT_BINDING = "<Super><Shift>w"
 _SHORTCUT_NAME = "castword"
 
 
@@ -77,7 +77,7 @@ def clear_shortcut_binding(slot_path: str) -> None:
         pass
 
 
-def register_castword_shortcut(binding: str = _DEFAULT_BINDING) -> bool:
+def register_castword_shortcut(binding: str = DEFAULT_BINDING) -> bool:
     """Register (or update) the castword shortcut. Returns True on success."""
     try:
         command = _resolve_castword_bin()
@@ -142,7 +142,7 @@ def format_binding(binding: str | None) -> str:
     """Return a human-readable label for a GSettings binding string."""
     if not binding:
         return "Not set"
-    return (
+    result = (
         binding
         .replace("<Super>", "Super+")
         .replace("<Shift>", "Shift+")
@@ -150,3 +150,6 @@ def format_binding(binding: str | None) -> str:
         .replace("<Alt>", "Alt+")
         .replace("<Primary>", "Ctrl+")
     )
+    if result and result[-1].isalpha():
+        result = result[:-1] + result[-1].upper()
+    return result

@@ -31,13 +31,16 @@ KEY="custom-keybindings"
 BASE_PATH="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings"
 
 # ── Find an unused slot or an existing castword entry ────────────────────────
+# gsettings returns full paths, e.g. /org/.../custom-keybindings/custom0/
 existing_slots=$(gsettings get "$SCHEMA" "$KEY" | tr -d "[]' " | tr ',' '\n' | grep -v '^$' || true)
+
+BINDING_SCHEMA="org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
 
 target_path=""
 for slot in $existing_slots; do
-    slot_name=$(gsettings get org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/"$slot"/ name 2>/dev/null | tr -d "'" || true)
+    slot_name=$(gsettings get "${BINDING_SCHEMA}:${slot}" name 2>/dev/null | tr -d "'" || true)
     if [[ "$slot_name" == "$SHORTCUT_NAME" ]]; then
-        target_path="${BASE_PATH}/${slot}/"
+        target_path="$slot"
         echo "Found existing castword shortcut at ${target_path} — updating."
         break
     fi
@@ -48,7 +51,7 @@ if [[ -z "$target_path" ]]; then
     idx=0
     while true; do
         candidate="${BASE_PATH}/custom${idx}/"
-        if ! echo "$existing_slots" | grep -qx "custom${idx}"; then
+        if ! echo "$existing_slots" | grep -qx "$candidate"; then
             target_path="$candidate"
             break
         fi
@@ -60,7 +63,6 @@ fi
 slot_id=$(basename "${target_path%/}")
 
 # ── Write the shortcut properties ────────────────────────────────────────────
-BINDING_SCHEMA="org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
 gsettings set "${BINDING_SCHEMA}:${target_path}" name    "'${SHORTCUT_NAME}'"
 gsettings set "${BINDING_SCHEMA}:${target_path}" command "'${COMMAND}'"
 gsettings set "${BINDING_SCHEMA}:${target_path}" binding "'${BINDING}'"
