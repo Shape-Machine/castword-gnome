@@ -3,13 +3,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, GLib, Gio
-
-# Set prgname before creating the application so that GTK sets the
-# correct Wayland xdg_toplevel::app_id.  Without this, GTK uses the
-# binary basename ("castword") and GNOME Shell cannot match the window
-# to xyz.shapemachine.castword-gnome.desktop or its icon.
-GLib.set_prgname("xyz.shapemachine.castword-gnome")
+from gi.repository import Adw, Gio
 
 
 class CastwordApplication(Adw.Application):
