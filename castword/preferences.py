@@ -426,7 +426,8 @@ class CastwordPreferences(Adw.PreferencesWindow):
         self._settings.set_string("output-mode", modes[combo.get_selected()])
 
     def _on_open_keyboard_settings(self, btn):
+        import subprocess
         try:
-            Gio.AppInfo.launch_default_for_uri("settings://keyboard", None)
-        except Exception:
+            subprocess.Popen(["gnome-control-center", "keyboard"], start_new_session=True)
+        except FileNotFoundError:
             pass
