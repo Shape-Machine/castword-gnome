@@ -30,7 +30,7 @@ $(STAMP): $(VENV) pyproject.toml
 	touch $(STAMP)
 
 install: install-service install-desktop install-schema install-icons install-metainfo
-	@echo "castword installed. Run 'scripts/setup-shortcut.sh' to register the keyboard shortcut."
+	@echo "castword installed. Set a keyboard shortcut in GNOME Settings → Keyboard → Custom Shortcuts."
 
 install-service: $(STAMP)
 	@CASTWORD_BIN=$$($(VENV)/bin/python3 -c "import shutil; print(shutil.which('castword') or '$(abspath $(VENV))/bin/castword')"); \
