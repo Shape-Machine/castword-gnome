@@ -1,3 +1,6 @@
+import gi
+gi.require_version("Secret", "1")
+
 from castword.providers.base import BaseProvider, ProviderError, Tone
 from castword.providers.openai_provider import OpenAIProvider
 from castword.providers.anthropic_provider import AnthropicProvider
