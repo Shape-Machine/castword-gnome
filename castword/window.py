@@ -169,13 +169,13 @@ class CastwordWindow(Adw.Window):
 
     def _on_key_pressed(self, ctrl, keyval, keycode, state):
         if keyval == Gdk.KEY_Escape:
-            self.set_visible(False)
+            self.get_application().quit()
             return True
         return False
 
     def _on_focus_out(self, ctrl):
         if self._settings.get_boolean("dismiss-on-focus-out"):
-            self.set_visible(False)
+            self.get_application().quit()
 
     def _on_input_changed(self, buf):
         # Hide diff panel when input is cleared
