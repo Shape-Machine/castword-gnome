@@ -34,7 +34,8 @@
   <url type="help">https://github.com/Shape-Machine/castword-gnome</url>
   <url type="faq">https://github.com/Shape-Machine/castword-gnome</url>
   <!-- TODO: add url type="contact" once shapemachine.xyz/castword has a contact page (must be a web URL, not mailto) -->
-  <!-- TODO: add url type="donation" and url type="translate" when applicable -->
+  <url type="donation">https://buy.stripe.com/9B68wQgat5kIgSBbXjes006</url>
+  <!-- TODO: add url type="translate" when applicable -->
 
   <developer id="xyz.shapemachine">
     <name>Sri Rang</name>
