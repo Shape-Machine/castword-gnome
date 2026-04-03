@@ -13,7 +13,7 @@ from gi.repository import Gio
 _SCHEMA = "org.gnome.settings-daemon.plugins.media-keys"
 _BINDING_SCHEMA = "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
 _BASE_PATH = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/"
-_DEFAULT_BINDING = "<Super>space"
+_DEFAULT_BINDING = "<Super><Shift>space"
 _SHORTCUT_NAME = "castword"
 
 
