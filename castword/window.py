@@ -235,7 +235,7 @@ class CastwordWindow(Adw.Window):
         self._prefs_open = True
         dialog = Adw.AlertDialog(
             heading="Shortcut already in use",
-            body=f"{binding_label} is currently used by "{conflict_name}". Replace it with castword?",
+            body=f'{binding_label} is currently used by \u201c{conflict_name}\u201d. Replace it with castword?',
         )
         dialog.add_response("cancel", "Cancel")
         dialog.add_response("replace", "Replace")
