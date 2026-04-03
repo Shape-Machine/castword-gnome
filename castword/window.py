@@ -33,11 +33,26 @@ class CastwordWindow(Adw.Window):
         self._toast_overlay = Adw.ToastOverlay()
         self.set_content(self._toast_overlay)
 
+        # ── Toolbar view with header bar ──────────────────────────────
+        toolbar_view = Adw.ToolbarView()
+        self._toast_overlay.set_child(toolbar_view)
+
+        header_bar = Adw.HeaderBar()
+        header_bar.add_css_class("flat")
+
+        gear_btn = Gtk.Button(icon_name="preferences-system-symbolic")
+        gear_btn.add_css_class("flat")
+        gear_btn.set_tooltip_text("Preferences")
+        gear_btn.connect("clicked", self._on_open_preferences)
+        header_bar.pack_end(gear_btn)
+
+        toolbar_view.add_top_bar(header_bar)
+
         outer = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
             spacing=0,
         )
-        self._toast_overlay.set_child(outer)
+        toolbar_view.set_content(outer)
 
         # ── Error banner ──────────────────────────────────────────────
         self._banner = Adw.Banner(title="", revealed=False)
@@ -162,6 +177,21 @@ class CastwordWindow(Adw.Window):
 
         # Clear diff when input changes
         self._input_buffer.connect("changed", self._on_input_changed)
+
+    # ------------------------------------------------------------------ #
+    # Preferences
+    # ------------------------------------------------------------------ #
+
+    def _on_open_preferences(self, btn):
+        from castword.preferences import CastwordPreferences
+        prefs = CastwordPreferences(transient_for=self, modal=False)
+        prefs.connect("close-request", self._on_preferences_closed)
+        prefs.present()
+
+    def _on_preferences_closed(self, prefs):
+        # Reload tone buttons in case the user added/edited/deleted tones
+        self._rebuild_tone_buttons()
+        return False
 
     # ------------------------------------------------------------------ #
     # Event handlers
