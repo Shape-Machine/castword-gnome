@@ -20,6 +20,7 @@ class CastwordWindow(Adw.Window):
 
         self._settings = Gio.Settings(schema_id="xyz.shapemachine.castword-gnome")
         self._busy: bool = False
+        self._prefs_open: bool = False
 
         self._build_ui()
         self._connect_signals()
@@ -184,12 +185,13 @@ class CastwordWindow(Adw.Window):
 
     def _on_open_preferences(self, btn):
         from castword.preferences import CastwordPreferences
+        self._prefs_open = True
         prefs = CastwordPreferences(transient_for=self, modal=False)
         prefs.connect("close-request", self._on_preferences_closed)
         prefs.present()
 
     def _on_preferences_closed(self, prefs):
-        # Reload tone buttons in case the user added/edited/deleted tones
+        self._prefs_open = False
         self._rebuild_tone_buttons()
         return False
 
@@ -204,7 +206,7 @@ class CastwordWindow(Adw.Window):
         return False
 
     def _on_focus_out(self, ctrl):
-        if self._settings.get_boolean("dismiss-on-focus-out") and not self._busy:
+        if self._settings.get_boolean("dismiss-on-focus-out") and not self._busy and not self._prefs_open:
             self.get_application().quit()
 
     def _on_input_changed(self, buf):
