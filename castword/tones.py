@@ -38,13 +38,6 @@ def default_tones() -> list[Tone]:
             ),
         ),
         Tone(
-            name="Friendly",
-            system_prompt=(
-                "Rewrite the following text in a warm, approachable, and conversational "
-                "tone. Return only the rewritten text."
-            ),
-        ),
-        Tone(
             name="Direct",
             system_prompt=(
                 "Rewrite the following text to be blunt and direct. No hedging, no "
