@@ -205,7 +205,8 @@ class CastwordPreferences(Adw.PreferencesWindow):
             return
 
         tones = tones_from_settings(self._settings)
-        new_tone = Tone(name=name, system_prompt=prompt)
+        existing_enabled = tones[index].enabled if index is not None else True
+        new_tone = Tone(name=name, system_prompt=prompt, enabled=existing_enabled)
         if index is None:
             tones.append(new_tone)
         else:
@@ -315,17 +316,21 @@ class CastwordPreferences(Adw.PreferencesWindow):
             group.set_visible(provider_id == active_provider)
 
     def _on_test_connection(self, btn, provider_id: str):
+        from castword.providers import make_provider
+        try:
+            provider = make_provider(self._settings)
+        except Exception as exc:
+            self._on_test_done(btn, False, str(exc))
+            return
         btn.set_sensitive(False)
         threading.Thread(
             target=self._test_thread,
-            args=(btn, provider_id),
+            args=(btn, provider),
             daemon=True,
         ).start()
 
-    def _test_thread(self, btn, provider_id: str):
+    def _test_thread(self, btn, provider):
         try:
-            from castword.providers import make_provider
-            provider = make_provider(self._settings)
             test_tone = Tone(
                 name="test",
                 system_prompt="Return only the word OK, nothing else.",
