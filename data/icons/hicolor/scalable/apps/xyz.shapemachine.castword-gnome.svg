@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Castword app icon — 128×128 nominal, scalable SVG
+  Follows GNOME app icon conventions:
+    • Vertical gradient using GNOME palette (Purple 3 → Blue 3)
+    • Dual-layer drop shadow matching GTK's -gtk-icon-shadow spec
+    • Top sheen + bottom front-face darkening (light source from above)
+    • Thin outer badge stroke
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+
+    <!-- Plate gradient: GNOME Purple 3 → Blue 3, top-to-bottom -->
+    <linearGradient id="plate-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#9141ac"/>
+      <stop offset="100%" stop-color="#3584e4"/>
+    </linearGradient>
+
+    <!-- Top-to-middle sheen: white fade (curved-surface light catch) -->
+    <linearGradient id="sheen-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="white" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Bottom-edge front-face darkening (light from above) -->
+    <linearGradient id="front-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="55%"  stop-color="black" stop-opacity="0"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.18"/>
+    </linearGradient>
+
+    <!--
+      Drop shadow matching GTK -gtk-icon-shadow:
+        layer 1 — 0 2px 12px rgba(0,0,0,0.20)  (ambient)
+        layer 2 — 0 1px  2px rgba(0,0,0,0.70)  (sharp contact)
+      SVG filters are composited in order; feMerge combines both.
+    -->
+    <filter id="plate-shadow" x="-18%" y="-18%" width="136%" height="150%"
+            color-interpolation-filters="linearRGB">
+      <!-- Ambient shadow -->
+      <feDropShadow dx="0" dy="2" stdDeviation="6"
+                    flood-color="black" flood-opacity="0.20" result="s1"/>
+      <!-- Sharp contact shadow -->
+      <feDropShadow dx="0" dy="1" stdDeviation="1"
+                    flood-color="black" flood-opacity="0.70" result="s2"/>
+    </filter>
+
+    <!-- Subtle shadow under speech bubble -->
+    <filter id="bubble-shadow" x="-8%" y="-8%" width="116%" height="120%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2.5"
+                    flood-color="black" flood-opacity="0.22"/>
+    </filter>
+
+    <!-- Clip to squircle for overlay layers -->
+    <clipPath id="squircle-clip">
+      <rect width="128" height="128" rx="28" ry="28"/>
+    </clipPath>
+
+  </defs>
+
+  <!-- 1. Plate with drop shadow -->
+  <rect width="128" height="128" rx="28" ry="28"
+        fill="url(#plate-grad)" filter="url(#plate-shadow)"/>
+
+  <!-- 2. Top sheen overlay (clipped to squircle) -->
+  <rect clip-path="url(#squircle-clip)"
+        width="128" height="128" rx="28" ry="28"
+        fill="url(#sheen-grad)"/>
+
+  <!-- 3. Bottom front-face darkening (clipped to squircle) -->
+  <rect clip-path="url(#squircle-clip)"
+        width="128" height="128" rx="28" ry="28"
+        fill="url(#front-grad)"/>
+
+  <!-- 4. Speech bubble with depth shadow
+       Body: x 16–112, y 18–74, rx 13
+       Tail: tip at (22, 92) between x=38 and x=46 on bottom edge -->
+  <path d="
+      M 29,18
+      H 99
+      A 13,13 0 0 1 112,31
+      V 61
+      A 13,13 0 0 1  99,74
+      H 46
+      L 22,92
+      L 38,74
+      H 29
+      A 13,13 0 0 1  16,61
+      V 31
+      A 13,13 0 0 1  29,18
+      Z"
+    fill="white" filter="url(#bubble-shadow)"/>
+
+  <!-- 5. "cast" — GNOME Purple 4 (#613583), centred in bubble body
+       Bubble body centre: x=64, y=(18+74)/2=46 -->
+  <text
+    x="64" y="46"
+    text-anchor="middle"
+    dominant-baseline="central"
+    font-family="Cantarell, sans-serif"
+    font-weight="bold"
+    font-size="30"
+    fill="#613583">cast</text>
+
+  <!-- 6. Outer badge stroke — gives the icon physical "sticker" presence -->
+  <rect width="128" height="128" rx="28" ry="28"
+        fill="none" stroke="black" stroke-opacity="0.12" stroke-width="1.5"/>
+
+</svg>
