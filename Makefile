@@ -22,7 +22,7 @@ DESKTOP_SRC      = data/xyz.shapemachine.castword-gnome.desktop
 # Release versioning — format: yyyy-mm-dd-NN (e.g. 2026-04-03-00)
 VERSION ?=
 
-.PHONY: run install install-service install-desktop install-icons uninstall-icons \
+.PHONY: run install uninstall install-service install-desktop install-icons uninstall-icons \
         install-metainfo uninstall-metainfo install-schema uninstall-schema \
         compile-schema clean release release-deps
 
@@ -42,6 +42,11 @@ $(STAMP): $(VENV) pyproject.toml
 
 install: install-service install-desktop install-schema install-icons install-metainfo
 	@echo "castword installed. Set a keyboard shortcut in GNOME Settings → Keyboard → Custom Shortcuts."
+
+uninstall: uninstall-icons uninstall-metainfo uninstall-schema
+	rm -f $(DBUS_SERVICE_DIR)/xyz.shapemachine.castword-gnome.service
+	rm -f $(APPLICATIONS_DIR)/xyz.shapemachine.castword-gnome.desktop
+	@echo "castword uninstalled."
 
 install-service:
 ifneq ($(DESTDIR),)
