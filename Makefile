@@ -24,7 +24,8 @@ VERSION ?=
 
 .PHONY: run install install-service install-desktop install-icons uninstall-icons \
         install-metainfo uninstall-metainfo install-schema uninstall-schema \
-        compile-schema clean tarball deb appimage release gh-release
+        compile-schema clean tarball deb appimage release gh-release \
+        update-pkgbuild aur-release
 
 run: $(STAMP) compile-schema
 	pkill -f '[/]bin/castword$$' 2>/dev/null || true
@@ -192,3 +193,39 @@ gh-release:
 	    --title "v$(VERSION)" \
 	    --generate-notes
 	@echo "Published: https://github.com/Shape-Machine/castword-gnome/releases/tag/v$(VERSION)"
+
+# Update packaging/aur/PKGBUILD and .SRCINFO for a given VERSION.
+# Converts VERSION (yyyy-mm-dd-NN) to pkgver (yyyy.mm.dd.NN), fetches the
+# sha256sum of the GitHub tag archive, and regenerates .SRCINFO.
+# Usage: make update-pkgbuild VERSION=2026-04-04-00
+update-pkgbuild:
+	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required" && exit 1)
+	@PKGVER=$$(echo "$(VERSION)" | tr '-' '.'); \
+	echo "==> Fetching sha256sum for v$(VERSION) tarball"; \
+	SHA256=$$(curl -sL "https://github.com/Shape-Machine/castword-gnome/archive/refs/tags/v$(VERSION).tar.gz" | sha256sum | cut -d' ' -f1); \
+	echo "    sha256: $$SHA256"; \
+	sed -i "s/^pkgver=.*/pkgver=$$PKGVER/" packaging/aur/PKGBUILD; \
+	sed -i "s/^sha256sums=.*/sha256sums=('$$SHA256')/" packaging/aur/PKGBUILD; \
+	cd packaging/aur && makepkg --printsrcinfo > .SRCINFO; \
+	echo "==> Updated packaging/aur/PKGBUILD (pkgver=$$PKGVER) and .SRCINFO"
+
+# Commit updated PKGBUILD/.SRCINFO to main and push to the AUR git remote.
+# Usage: make aur-release VERSION=2026-04-04-00
+aur-release:
+	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required" && exit 1)
+	$(MAKE) update-pkgbuild VERSION=$(VERSION)
+	@git add packaging/aur/PKGBUILD packaging/aur/.SRCINFO; \
+	git diff --cached --quiet || git commit -m "chore: update AUR PKGBUILD for v$(VERSION)"; \
+	git push origin main
+	@AUR_TMP=$$(mktemp -d); \
+	echo "==> Cloning AUR repo"; \
+	git clone ssh://aur@aur.archlinux.org/castword-gnome.git $$AUR_TMP; \
+	cp packaging/aur/PKGBUILD $$AUR_TMP/; \
+	cp packaging/aur/.SRCINFO $$AUR_TMP/; \
+	cd $$AUR_TMP \
+	    && git add PKGBUILD .SRCINFO \
+	    && git commit -m "Update to v$(VERSION)" \
+	    && git push \
+	    && echo "==> AUR updated: https://aur.archlinux.org/packages/castword-gnome" \
+	    || echo "ERROR: AUR push failed — check SSH key and AUR account"; \
+	rm -rf $$AUR_TMP
