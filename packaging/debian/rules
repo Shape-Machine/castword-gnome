@@ -1,0 +1,34 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+export PYBUILDDIR = $(CURDIR)/debian/castword-gnome
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	# Install the Python package and castword console script via pip
+	pip3 install \
+	    --no-deps \
+	    --ignore-installed \
+	    --prefix=$(PYBUILDDIR)/usr \
+	    --root=/ \
+	    .
+	# Install pip runtime dependencies into the package staging area
+	pip3 install \
+	    --no-compile \
+	    --prefix=$(PYBUILDDIR)/usr \
+	    --root=/ \
+	    httpx openai anthropic google-genai
+	# Install data files (schema, desktop, icons, metainfo, D-Bus service)
+	$(MAKE) install \
+	    DESTDIR=$(PYBUILDDIR) \
+	    PREFIX=/usr
+
+override_dh_auto_build:
+	# Nothing to compile — pure Python project
+	:
+
+override_dh_installgsettings:
+	# Schema is installed by make install; skip dh_installgsettings
+	:
