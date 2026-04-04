@@ -1,0 +1,67 @@
+app-id: xyz.shapemachine.castword-gnome
+runtime: org.gnome.Platform
+runtime-version: '47'
+sdk: org.gnome.Sdk
+command: castword
+
+finish-args:
+  # Display
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # D-Bus session access (for D-Bus activation and GSettings)
+  - --socket=session-bus
+  # Network access (LLM API calls)
+  - --share=network
+  # Secret Service (API key storage via libsecret)
+  - --talk-name=org.freedesktop.secrets
+  # Clipboard access (output mode)
+  - --talk-name=org.gnome.Mutter.IdleMonitor
+  - --share=ipc
+
+modules:
+  # Python runtime dependencies (pip-installed)
+  - name: python-deps
+    buildsystem: simple
+    build-commands:
+      - pip3 install
+          --prefix=/app
+          --no-build-isolation
+          httpx
+          openai
+          anthropic
+          google-genai
+    sources:
+      - type: shell
+        commands:
+          - echo "Dependencies installed via pip at build time"
+
+  # castword-gnome application
+  - name: castword-gnome
+    buildsystem: simple
+    build-commands:
+      # Install Python package and console script
+      - pip3 install --prefix=/app --no-deps .
+      # Install GSettings schema
+      - install -Dm644 data/xyz.shapemachine.castword-gnome.gschema.xml
+          /app/share/glib-2.0/schemas/xyz.shapemachine.castword-gnome.gschema.xml
+      - glib-compile-schemas /app/share/glib-2.0/schemas/
+      # Install desktop file
+      - install -Dm644 data/xyz.shapemachine.castword-gnome.desktop
+          /app/share/applications/xyz.shapemachine.castword-gnome.desktop
+      # Install AppStream metainfo
+      - install -Dm644 data/xyz.shapemachine.castword-gnome.metainfo.xml
+          /app/share/metainfo/xyz.shapemachine.castword-gnome.metainfo.xml
+      # Install D-Bus service file
+      - install -Dm644 data/xyz.shapemachine.castword-gnome.service
+          /app/share/dbus-1/services/xyz.shapemachine.castword-gnome.service
+      # Install icons (all sizes)
+      - for size in 16x16 22x22 24x24 32x32 48x48 64x64 96x96 128x128 256x256 512x512; do
+          install -Dm644 data/icons/hicolor/$size/apps/xyz.shapemachine.castword-gnome.png
+            /app/share/icons/hicolor/$size/apps/xyz.shapemachine.castword-gnome.png;
+        done
+      - install -Dm644 data/icons/hicolor/scalable/apps/xyz.shapemachine.castword-gnome.svg
+          /app/share/icons/hicolor/scalable/apps/xyz.shapemachine.castword-gnome.svg
+    sources:
+      - type: dir
+        path: ../..

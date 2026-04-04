@@ -1,0 +1,71 @@
+version: 1
+
+script:
+  # Ensure the application is installed into AppDir before building
+  - pip3 install --prefix AppDir/usr --no-deps ../..
+  - pip3 install --prefix AppDir/usr httpx openai anthropic google-genai
+  # Data files
+  - make -C ../.. install DESTDIR=$(pwd)/AppDir PREFIX=/usr
+  # Compile schemas inside AppDir
+  - glib-compile-schemas AppDir/usr/share/glib-2.0/schemas/
+
+AppDir:
+  path: ./AppDir
+
+  app_info:
+    id: xyz.shapemachine.castword-gnome
+    name: Castword
+    icon: xyz.shapemachine.castword-gnome
+    version: !ENV ${VERSION:-0.1.0}
+    exec: usr/bin/castword
+    exec_args: $@
+
+  apt:
+    arch: amd64
+    sources:
+      - sourceline: deb http://archive.ubuntu.com/ubuntu jammy main restricted universe
+        key_url: https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x871920D1991BC93C
+
+    include:
+      # Python runtime
+      - python3
+      - python3-gi
+      - python3-gi-cairo
+      # GTK4 and Libadwaita
+      - libgtk-4-1
+      - libadwaita-1-0
+      - gir1.2-gtk-4.0
+      - gir1.2-adw-1
+      # Secret service
+      - libsecret-1-0
+      # GLib/GSettings
+      - libglib2.0-0
+      - glib-compile-schemas
+
+    exclude:
+      - humanity-icon-theme
+      - hicolor-icon-theme
+      - adwaita-icon-theme
+
+  runtime:
+    env:
+      PYTHONPATH: '${APPDIR}/usr/lib/python3/dist-packages:${APPDIR}/usr/lib/python3.11/dist-packages'
+      GI_TYPELIB_PATH: '${APPDIR}/usr/lib/x86_64-linux-gnu/girepository-1.0'
+      GSETTINGS_SCHEMA_DIR: '${APPDIR}/usr/share/glib-2.0/schemas'
+      XDG_DATA_DIRS: '${APPDIR}/usr/share:${XDG_DATA_DIRS}'
+
+  test:
+    fedora-40:
+      image: appimagecrafters/tests-env:fedora-30
+      command: ./AppRun --help
+      use_host_x: true
+    ubuntu-22.04:
+      image: appimagecrafters/tests-env:ubuntu-bionic
+      command: ./AppRun --help
+      use_host_x: true
+
+AppImage:
+  arch: x86_64
+  file_name: Castword-!ENV ${VERSION:-latest}-x86_64.AppImage
+  update-information: gh-releases-zsync|Shape-Machine|castword-gnome|latest|Castword-*-x86_64.AppImage.zsync
+  sign-key: None

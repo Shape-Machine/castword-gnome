@@ -1,0 +1,5 @@
+castword-gnome (0.1.0-1) unstable; urgency=medium
+
+  * Initial Debian packaging.
+
+ -- Sri Rang <sri@shapemachine.xyz>  Fri, 04 Apr 2026 00:00:00 +0000
