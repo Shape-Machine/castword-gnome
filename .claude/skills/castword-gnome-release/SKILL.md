@@ -1,3 +1,8 @@
+---
+name: castword-gnome-release
+description: Build and publish a versioned release of castword-gnome to GitHub
+---
+
 # /castword-gnome-release
 
 Build and publish a versioned release of castword-gnome to GitHub.
