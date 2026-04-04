@@ -43,10 +43,10 @@ make install
 
 | Format | Download |
 |---|---|
-| Source tarball | [castword-gnome-2026-04-04-00.tar.gz](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-04-00/castword-gnome-2026-04-04-00.tar.gz) |
+| Source tarball | [castword-gnome-2026-04-04-01.tar.gz](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-04-01/castword-gnome-2026-04-04-01.tar.gz) |
+| Arch AUR | `yay -S castword-gnome` |
 | Debian `.deb` | coming soon |
 | AppImage | coming soon |
-| Arch AUR (`castword-gnome`) | coming soon |
 | Flatpak | coming soon |
 
 ---
