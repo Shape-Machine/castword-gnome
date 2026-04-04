@@ -3,7 +3,7 @@ version: 1
 script:
   # Ensure the application is installed into AppDir before building
   - pip3 install --prefix AppDir/usr --no-deps ../..
-  - pip3 install --prefix AppDir/usr httpx openai anthropic google-genai
+  - pip3 install --prefix AppDir/usr httpx==0.28.1 openai==2.30.0 anthropic==0.89.0 google-genai==1.70.0
   # Data files
   - make -C ../.. install DESTDIR=$(pwd)/AppDir PREFIX=/usr
   # Compile schemas inside AppDir

@@ -19,7 +19,7 @@ override_dh_auto_install:
 	    --no-compile \
 	    --prefix=$(PYBUILDDIR)/usr \
 	    --root=/ \
-	    httpx openai anthropic google-genai
+	    httpx==0.28.1 openai==2.30.0 anthropic==0.89.0 google-genai==1.70.0
 	# Install data files (schema, desktop, icons, metainfo, D-Bus service)
 	$(MAKE) install \
 	    DESTDIR=$(PYBUILDDIR) \

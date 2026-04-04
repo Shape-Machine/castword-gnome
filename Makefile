@@ -46,8 +46,9 @@ install: install-service install-desktop install-schema install-icons install-me
 install-service:
 ifneq ($(DESTDIR),)
 	mkdir -p $(DBUS_SERVICE_DIR)
-	cp $(SERVICE_SRC) $(DBUS_SERVICE_DIR)/xyz.shapemachine.castword-gnome.service
-	@echo "Installed D-Bus service."
+	sed "s|Exec=.*|Exec=$(PREFIX)/bin/castword|" $(SERVICE_SRC) \
+	    > $(DBUS_SERVICE_DIR)/xyz.shapemachine.castword-gnome.service
+	@echo "Installed D-Bus service with Exec=$(PREFIX)/bin/castword"
 else
 	$(MAKE) $(STAMP)
 	@CASTWORD_BIN=$$($(VENV)/bin/python3 -c "import shutil; print(shutil.which('castword') or '$(abspath $(VENV))/bin/castword')"); \
@@ -100,11 +101,12 @@ uninstall-metainfo:
 compile-schema:
 	glib-compile-schemas $(SCHEMA_DIR)
 
-install-schema: compile-schema
+install-schema:
 ifneq ($(DESTDIR),)
 	mkdir -p $(DESTDIR)$(PREFIX)/share/glib-2.0/schemas
 	cp $(SCHEMA_FILE) $(DESTDIR)$(PREFIX)/share/glib-2.0/schemas/
 else
+	glib-compile-schemas $(SCHEMA_DIR)
 	sudo cp $(SCHEMA_FILE) $(SYSTEM_SCHEMA_DIR)/
 	sudo glib-compile-schemas $(SYSTEM_SCHEMA_DIR)
 endif
