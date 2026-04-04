@@ -27,7 +27,9 @@ VERSION ?=
         compile-schema clean release release-deps
 
 run: $(STAMP) compile-schema
+	pkill -f 'castword[.]main' 2>/dev/null || true
 	pkill -f '[/]bin/castword$$' 2>/dev/null || true
+	sleep 0.3
 	GSETTINGS_SCHEMA_DIR=$(SCHEMA_DIR) gsettings reset xyz.shapemachine.castword-gnome shortcut-prompted 2>/dev/null || true
 	GSETTINGS_SCHEMA_DIR=$(SCHEMA_DIR) gsettings reset xyz.shapemachine.castword-gnome tones 2>/dev/null || true
 	$(VENV)/bin/python3 -c "from castword.shortcuts import unregister_castword_shortcut; unregister_castword_shortcut()" 2>/dev/null || true
@@ -119,6 +121,8 @@ uninstall-schema:
 	sudo glib-compile-schemas $(SYSTEM_SCHEMA_DIR)
 
 clean:
+	pkill -f 'castword[.]main' 2>/dev/null || true
+	pkill -f '[/]bin/castword$$' 2>/dev/null || true
 	find . -name "__pycache__" -exec rm -rf {} +
 	find . -name "*.pyc" -delete
 	rm -f $(SCHEMA_DIR)/gschemas.compiled
