@@ -6,7 +6,7 @@ PYTHON = $(VENV)/bin/python3
 STAMP = $(VENV)/.installed
 
 # Packaging / install paths
-# Override PREFIX=/usr DESTDIR=/staging for package builds (deb, AUR, Flatpak)
+# Override PREFIX=/usr DESTDIR=/staging for package builds
 PREFIX  ?= $(HOME)/.local
 DESTDIR ?=
 
@@ -24,8 +24,7 @@ VERSION ?=
 
 .PHONY: run install install-service install-desktop install-icons uninstall-icons \
         install-metainfo uninstall-metainfo install-schema uninstall-schema \
-        compile-schema clean tarball deb appimage release gh-release \
-        update-pkgbuild aur-release
+        compile-schema clean release release-deps
 
 run: $(STAMP) compile-schema
 	pkill -f '[/]bin/castword$$' 2>/dev/null || true
@@ -121,52 +120,29 @@ clean:
 	find . -name "*.pyc" -delete
 	rm -f $(SCHEMA_DIR)/gschemas.compiled
 	rm -rf $(VENV)
-	rm -rf dist/ build/
-
-# ─── Packaging ────────────────────────────────────────────────────────────────
-
-# Source tarball — used by AUR and gh-release
-tarball:
-	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make tarball VERSION=2026-04-03-00)" && exit 1)
-	mkdir -p dist
-	git archive --format=tar.gz \
-	    --prefix=castword-gnome-$(VERSION)/ \
-	    HEAD \
-	    -o dist/castword-gnome-$(VERSION).tar.gz
-	@echo "Created dist/castword-gnome-$(VERSION).tar.gz"
-
-# Debian package — requires dpkg-buildpackage (install build-essential devscripts)
-deb:
-	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make deb VERSION=2026-04-03-00)" && exit 1)
-	mkdir -p dist build/deb
-	rm -rf build/deb/castword-gnome-$(VERSION)
-	git archive --format=tar HEAD | tar -x -C build/deb
-	mv build/deb/$(shell basename $(CURDIR)) build/deb/castword-gnome-$(VERSION) 2>/dev/null || \
-	    (mkdir -p build/deb/castword-gnome-$(VERSION) && git archive --format=tar HEAD | tar -x -C build/deb/castword-gnome-$(VERSION))
-	cp -r packaging/debian build/deb/castword-gnome-$(VERSION)/debian
-	cd build/deb/castword-gnome-$(VERSION) && dpkg-buildpackage -us -uc -b
-	cp build/deb/castword-gnome_*.deb dist/ 2>/dev/null || \
-	    cp build/deb/*.deb dist/
-	@echo "Created .deb in dist/"
-
-# AppImage — requires appimage-builder (pip install appimage-builder)
-appimage:
-	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make appimage VERSION=2026-04-03-00)" && exit 1)
-	mkdir -p dist
-	cd packaging/appimage && VERSION=$(VERSION) appimage-builder --recipe AppImageBuilder.yml
-	mv packaging/appimage/Castword-$(VERSION)-x86_64.AppImage dist/ 2>/dev/null || \
-	    mv packaging/appimage/Castword-*.AppImage dist/ 2>/dev/null || true
-	@echo "Created AppImage in dist/"
+	rm -rf dist/ _release_staging/ _flatpak_repo/ _flatpak_build/ _appimage/
 
 # ─── Release ──────────────────────────────────────────────────────────────────
 
-# Bump version, commit, tag, push, and build all distribution artifacts.
+# Install all tools needed to run make release.
+# Run this once on a new machine before cutting a release.
+release-deps:
+	sudo pacman -S --needed flatpak-builder github-cli ruby
+	sudo gem install fpm
+	@mkdir -p $(HOME)/bin
+	curl -L -o $(HOME)/bin/appimagetool \
+	    https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+	chmod +x $(HOME)/bin/appimagetool
+	@echo ""
+	@echo "Make sure ~/bin is in your PATH (add to ~/.config/fish/config.fish):"
+	@echo "  fish_add_path ~/bin"
+
+# Bump version, commit, tag, push, then build and publish all artifacts.
 # Usage: make release VERSION=2026-04-03-00
 release:
 	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make release VERSION=2026-04-03-00)" && exit 1)
 	@echo "==> Bumping version to $(VERSION)"
 	sed -i 's/^version = ".*"/version = "$(VERSION)"/' pyproject.toml
-	@# Prepend a new entry to the Debian changelog
 	@TMPFILE=$$(mktemp); \
 	printf 'castword-gnome ($(VERSION)-1) unstable; urgency=medium\n\n  * Release $(VERSION).\n\n -- Sri Rang <sri@shapemachine.xyz>  %s\n\n' \
 	    "$$(date -R)" > $$TMPFILE; \
@@ -177,55 +153,5 @@ release:
 	git commit -m "chore: release v$(VERSION)"
 	git tag "v$(VERSION)"
 	git push origin main "v$(VERSION)"
-	@echo "==> Building distribution artifacts"
-	$(MAKE) tarball VERSION=$(VERSION)
-	$(MAKE) deb VERSION=$(VERSION)
-	$(MAKE) appimage VERSION=$(VERSION)
-	@echo "==> Release v$(VERSION) ready. Run: make gh-release VERSION=$(VERSION)"
-
-# Publish a GitHub release and attach dist/ artifacts.
-# Usage: make gh-release VERSION=2026-04-03-00
-gh-release:
-	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make gh-release VERSION=2026-04-03-00)" && exit 1)
-	@test -d dist || (echo "ERROR: dist/ not found — run 'make release VERSION=$(VERSION)' first" && exit 1)
-	gh release create "v$(VERSION)" dist/* \
-	    --repo Shape-Machine/castword-gnome \
-	    --title "v$(VERSION)" \
-	    --generate-notes
-	@echo "Published: https://github.com/Shape-Machine/castword-gnome/releases/tag/v$(VERSION)"
-
-# Update packaging/aur/PKGBUILD and .SRCINFO for a given VERSION.
-# Converts VERSION (yyyy-mm-dd-NN) to pkgver (yyyy.mm.dd.NN), fetches the
-# sha256sum of the GitHub tag archive, and regenerates .SRCINFO.
-# Usage: make update-pkgbuild VERSION=2026-04-04-00
-update-pkgbuild:
-	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required" && exit 1)
-	@PKGVER=$$(echo "$(VERSION)" | tr '-' '.'); \
-	echo "==> Fetching sha256sum for v$(VERSION) tarball"; \
-	SHA256=$$(curl -sL "https://github.com/Shape-Machine/castword-gnome/archive/refs/tags/v$(VERSION).tar.gz" | sha256sum | cut -d' ' -f1); \
-	echo "    sha256: $$SHA256"; \
-	sed -i "s/^pkgver=.*/pkgver=$$PKGVER/" packaging/aur/PKGBUILD; \
-	sed -i "s/^sha256sums=.*/sha256sums=('$$SHA256')/" packaging/aur/PKGBUILD; \
-	cd packaging/aur && makepkg --printsrcinfo > .SRCINFO; \
-	echo "==> Updated packaging/aur/PKGBUILD (pkgver=$$PKGVER) and .SRCINFO"
-
-# Commit updated PKGBUILD/.SRCINFO to main and push to the AUR git remote.
-# Usage: make aur-release VERSION=2026-04-04-00
-aur-release:
-	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required" && exit 1)
-	$(MAKE) update-pkgbuild VERSION=$(VERSION)
-	@git add packaging/aur/PKGBUILD packaging/aur/.SRCINFO; \
-	git diff --cached --quiet || git commit -m "chore: update AUR PKGBUILD for v$(VERSION)"; \
-	git push origin main
-	@AUR_TMP=$$(mktemp -d); \
-	echo "==> Cloning AUR repo"; \
-	git clone ssh://aur@aur.archlinux.org/castword-gnome.git $$AUR_TMP; \
-	cp packaging/aur/PKGBUILD $$AUR_TMP/; \
-	cp packaging/aur/.SRCINFO $$AUR_TMP/; \
-	cd $$AUR_TMP \
-	    && git add PKGBUILD .SRCINFO \
-	    && git commit -m "Update to v$(VERSION)" \
-	    && git push \
-	    && echo "==> AUR updated: https://aur.archlinux.org/packages/castword-gnome" \
-	    || echo "ERROR: AUR push failed — check SSH key and AUR account"; \
-	rm -rf $$AUR_TMP
+	@echo "==> Building and publishing"
+	PATH="$(HOME)/bin:$(PATH)" ./scripts/release.sh $(VERSION)
