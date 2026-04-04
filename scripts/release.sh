@@ -41,6 +41,7 @@ check() {
     command -v "$1" &>/dev/null || { echo "✗ missing: $1 — $2"; exit 1; }
 }
 
+check uv "sudo pacman -S uv"
 [[ $DO_FLATPAK  == 1 ]] && check flatpak-builder "sudo pacman -S flatpak-builder"
 [[ $DO_APPIMAGE == 1 ]] && check appimagetool    "download from https://github.com/AppImage/appimagetool/releases (see make release-deps)"
 [[ $DO_DEB      == 1 ]] && check fpm             "sudo gem install fpm  (see make release-deps)"
@@ -62,7 +63,8 @@ cp -r "$ROOT/castword" "$STAGING/usr/share/castword-gnome/"
 
 # Vendor pip dependencies (not in all distro repos)
 log "Vendoring pip dependencies"
-python3 -m pip install --quiet \
+uv pip install --quiet \
+    --python python3 \
     --target="$STAGING/usr/share/castword-gnome/vendor" \
     "httpx==0.28.1" "openai==2.30.0" "anthropic==0.89.0" "google-genai==1.70.0"
 
