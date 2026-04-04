@@ -9,8 +9,8 @@ finish-args:
   - --socket=wayland
   - --socket=fallback-x11
   - --device=dri
-  # D-Bus session access (for D-Bus activation and GSettings)
-  - --socket=session-bus
+  # D-Bus: own the app's bus name (required for D-Bus activation)
+  - --own-name=xyz.shapemachine.castword-gnome
   # Network access (LLM API calls)
   - --share=network
   # Secret Service (API key storage via libsecret)
@@ -27,10 +27,10 @@ modules:
       - pip3 install
           --prefix=/app
           --no-build-isolation
-          httpx
-          openai
-          anthropic
-          google-genai
+          httpx==0.28.1
+          openai==2.30.0
+          anthropic==0.89.0
+          google-genai==1.70.0
     sources:
       - type: shell
         commands:
