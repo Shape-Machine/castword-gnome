@@ -22,10 +22,13 @@ class CastwordWindow(Adw.Window):
         self._busy: bool = False
         self._prefs_open: bool = False
 
+        self.set_hide_on_close(True)
+
         self._build_ui()
         self._connect_signals()
 
         if not self._settings.get_boolean("shortcut-prompted"):
+            self._prefs_open = True  # block focus-out dismiss while prompt is pending
             GLib.idle_add(self._prompt_shortcut_setup)
 
     # ------------------------------------------------------------------ #
@@ -171,9 +174,6 @@ class CastwordWindow(Adw.Window):
     # ------------------------------------------------------------------ #
 
     def _connect_signals(self):
-        # Close button hides rather than destroys (app stays resident for D-Bus re-activation)
-        self.connect("close-request", self._on_close_request)
-
         # Escape to close
         key_ctrl = Gtk.EventControllerKey()
         key_ctrl.connect("key-pressed", self._on_key_pressed)
@@ -208,6 +208,7 @@ class CastwordWindow(Adw.Window):
         self._settings.set_boolean("shortcut-prompted", True)
         _, binding = find_castword_shortcut()
         if binding is not None:
+            self._prefs_open = False  # no dialog needed, unblock focus-out dismiss
             return GLib.SOURCE_REMOVE  # already configured
 
         self._prefs_open = True
@@ -268,10 +269,6 @@ class CastwordWindow(Adw.Window):
             self._dismiss()
             return True
         return False
-
-    def _on_close_request(self, window):
-        self._dismiss()
-        return True  # Prevent destruction; window stays resident for D-Bus re-activation
 
     def _on_focus_out(self, ctrl):
         if self._settings.get_boolean("dismiss-on-focus-out") and not self._busy and not self._prefs_open:
