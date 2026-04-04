@@ -277,9 +277,11 @@ if [[ $DO_AUR == 1 ]]; then
     sed "s/@VERSION@/$VERSION/g; s/@PKGVER@/$PKGVER/g; s/@SHA256SUM@/$SHA256/g" \
         "$ROOT/packaging/aur/PKGBUILD" > "$AUR_TMP/PKGBUILD"
 
+    cp "$ROOT/packaging/aur/castword-gnome-bin.install" "$AUR_TMP/castword-gnome-bin.install"
+
     (cd "$AUR_TMP" && makepkg --printsrcinfo > .SRCINFO)
 
-    git -C "$AUR_TMP" add PKGBUILD .SRCINFO
+    git -C "$AUR_TMP" add PKGBUILD .SRCINFO castword-gnome-bin.install
     git -C "$AUR_TMP" commit -m "Update to v$VERSION"
     git -C "$AUR_TMP" push
 

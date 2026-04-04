@@ -16,6 +16,7 @@ depends=(
 )
 provides=('castword-gnome')
 conflicts=('castword-gnome')
+install=castword-gnome-bin.install
 _fullver=@VERSION@
 source=("$pkgname-$_fullver.pkg.tar.zst::https://github.com/Shape-Machine/castword-gnome/releases/download/v$_fullver/castword-gnome-$_fullver-any.pkg.tar.zst")
 sha256sums=('@SHA256SUM@')
