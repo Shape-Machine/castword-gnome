@@ -16,6 +16,12 @@ gschemas.compiled
 .env
 .env.*
 
+# Release build artifacts
+_release_staging/
+_flatpak_repo/
+_flatpak_build/
+_appimage/
+
 # IDE
 .idea/
 .vscode/
