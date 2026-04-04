@@ -39,14 +39,15 @@ make install
 
 `make install` does everything in one shot: creates a `.venv`, installs the package, registers the D-Bus service, installs the desktop file, icons, AppStream metadata, and the GSettings schema.
 
-### Packages _(coming soon)_
+### Packages
 
-| Format | Status |
+| Format | Download |
 |---|---|
-| Arch AUR (`castword-gnome`) | planned |
-| Debian `.deb` | planned |
-| Flatpak | planned |
-| AppImage | planned |
+| Source tarball | [castword-gnome-2026-04-04-00.tar.gz](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-04-00/castword-gnome-2026-04-04-00.tar.gz) |
+| Debian `.deb` | coming soon |
+| AppImage | coming soon |
+| Arch AUR (`castword-gnome`) | coming soon |
+| Flatpak | coming soon |
 
 ---
 
