@@ -145,7 +145,8 @@ release-deps:
 release:
 	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make release VERSION=2026-04-03-00)" && exit 1)
 	@echo "==> Bumping version to $(VERSION)"
-	sed -i 's/^version = ".*"/version = "$(VERSION)"/' pyproject.toml
+	$(eval PYVER := $(subst -,.,$(VERSION)))
+	sed -i 's/^version = ".*"/version = "$(PYVER)"/' pyproject.toml
 	@TMPFILE=$$(mktemp); \
 	printf 'castword-gnome ($(VERSION)-1) unstable; urgency=medium\n\n  * Release $(VERSION).\n\n -- Sri Rang <sri@shapemachine.xyz>  %s\n\n' \
 	    "$$(date -R)" > $$TMPFILE; \
