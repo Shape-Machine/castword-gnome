@@ -1,3 +1,9 @@
+castword-gnome (2026-04-04-00-1) unstable; urgency=medium
+
+  * Release 2026-04-04-00.
+
+ -- Sri Rang <sri@shapemachine.xyz>  Sat, 04 Apr 2026 11:39:59 +0200
+
 castword-gnome (0.1.0-1) unstable; urgency=medium
 
   * Initial Debian packaging.
