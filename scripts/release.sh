@@ -84,11 +84,6 @@ mkdir -p \
     "$STAGING/usr/share/metainfo" \
     "$STAGING/usr/share/dbus-1/services"
 
-for size in 16x16 22x22 24x24 32x32 48x48 64x64 96x96 128x128 256x256 512x512; do
-    mkdir -p "$STAGING/usr/share/icons/hicolor/$size/apps"
-    cp "$ROOT/data/icons/hicolor/$size/apps/$APP_ID.png" \
-       "$STAGING/usr/share/icons/hicolor/$size/apps/"
-done
 mkdir -p "$STAGING/usr/share/icons/hicolor/scalable/apps"
 cp "$ROOT/data/icons/hicolor/scalable/apps/$APP_ID.svg" \
    "$STAGING/usr/share/icons/hicolor/scalable/apps/"

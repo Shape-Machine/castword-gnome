@@ -50,10 +50,12 @@ modules:
       # D-Bus service file
       - install -Dm644 data/xyz.shapemachine.castword-gnome.service
           /app/share/dbus-1/services/xyz.shapemachine.castword-gnome.service
-      # Icons (PNG only — SVG skipped to avoid appstreamcli glycin dispatch bug on some hosts)
-      - for size in 16x16 22x22 24x24 32x32 48x48 64x64 96x96 128x128 256x256 512x512; do
-          install -Dm644 data/icons/hicolor/$size/apps/xyz.shapemachine.castword-gnome.png
-            /app/share/icons/hicolor/$size/apps/xyz.shapemachine.castword-gnome.png;
+      # Icons — rasterize SVG to PNG via rsvg-convert (avoids appstreamcli glycin SVG bug)
+      - for size in 16 22 24 32 48 64 96 128 256 512; do
+          mkdir -p /app/share/icons/hicolor/${size}x${size}/apps;
+          rsvg-convert -w $size -h $size
+            data/icons/hicolor/scalable/apps/xyz.shapemachine.castword-gnome.svg
+            -o /app/share/icons/hicolor/${size}x${size}/apps/xyz.shapemachine.castword-gnome.png;
         done
     sources:
       - type: dir

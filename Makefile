@@ -47,9 +47,6 @@ uninstall: uninstall-icons uninstall-metainfo uninstall-schema
 	rm -f $(DBUS_SERVICE_DIR)/xyz.shapemachine.castword-gnome.service
 	rm -f $(APPLICATIONS_DIR)/xyz.shapemachine.castword-gnome.desktop
 	@# Also clean up any system-wide leftovers from a previous PREFIX=/usr install
-	@for size in 16x16 22x22 24x24 32x32 48x48 64x64 96x96 128x128 256x256 512x512; do \
-		sudo rm -f /usr/share/icons/hicolor/$$size/apps/xyz.shapemachine.castword-gnome.png 2>/dev/null || true; \
-	done
 	@sudo rm -f /usr/share/icons/hicolor/scalable/apps/xyz.shapemachine.castword-gnome.svg 2>/dev/null || true
 	@sudo rm -f /usr/share/glib-2.0/schemas/xyz.shapemachine.castword-gnome.gschema.xml 2>/dev/null || true
 	@sudo rm -f /usr/share/applications/xyz.shapemachine.castword-gnome.desktop 2>/dev/null || true
@@ -80,11 +77,6 @@ endif
 	@echo "Installed desktop file."
 
 install-icons:
-	@for size in 16x16 22x22 24x24 32x32 48x48 64x64 96x96 128x128 256x256 512x512; do \
-		mkdir -p $(ICONS_DEST_DIR)/$$size/apps; \
-		cp $(ICONS_SRC_DIR)/$$size/apps/xyz.shapemachine.castword-gnome.png \
-		   $(ICONS_DEST_DIR)/$$size/apps/; \
-	done
 	mkdir -p $(ICONS_DEST_DIR)/scalable/apps
 	cp $(ICONS_SRC_DIR)/scalable/apps/xyz.shapemachine.castword-gnome.svg \
 	   $(ICONS_DEST_DIR)/scalable/apps/
@@ -95,9 +87,6 @@ endif
 
 uninstall-icons:
 	rm -f $(ICONS_DEST_DIR)/scalable/apps/xyz.shapemachine.castword-gnome.svg
-	@for size in 16x16 22x22 24x24 32x32 48x48 64x64 96x96 128x128 256x256 512x512; do \
-		rm -f $(ICONS_DEST_DIR)/$$size/apps/xyz.shapemachine.castword-gnome.png; \
-	done
 ifeq ($(DESTDIR),)
 	gtk-update-icon-cache -f -t $(ICONS_DEST_DIR) 2>/dev/null || true
 endif
