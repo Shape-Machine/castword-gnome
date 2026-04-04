@@ -171,6 +171,9 @@ class CastwordWindow(Adw.Window):
     # ------------------------------------------------------------------ #
 
     def _connect_signals(self):
+        # Close button hides rather than destroys (app stays resident for D-Bus re-activation)
+        self.connect("close-request", self._on_close_request)
+
         # Escape to close
         key_ctrl = Gtk.EventControllerKey()
         key_ctrl.connect("key-pressed", self._on_key_pressed)
@@ -265,6 +268,10 @@ class CastwordWindow(Adw.Window):
             self._dismiss()
             return True
         return False
+
+    def _on_close_request(self, window):
+        self._dismiss()
+        return True  # Prevent destruction; window stays resident for D-Bus re-activation
 
     def _on_focus_out(self, ctrl):
         if self._settings.get_boolean("dismiss-on-focus-out") and not self._busy and not self._prefs_open:
