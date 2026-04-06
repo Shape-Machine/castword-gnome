@@ -24,7 +24,8 @@ VERSION ?=
 
 .PHONY: run install uninstall install-service install-desktop install-icons uninstall-icons \
         install-metainfo uninstall-metainfo install-schema uninstall-schema \
-        compile-schema clean release release-deps
+        compile-schema clean release release-deps \
+        deb rpm appimage flatpak gh-release
 
 run: $(STAMP) compile-schema
 	pkill -f 'castword[.]main' 2>/dev/null || true
@@ -163,3 +164,34 @@ release:
 	git push origin main "v$(VERSION)"
 	@echo "==> Building and publishing"
 	PATH="$(HOME)/bin:$(PATH)" ./scripts/release.sh $(VERSION)
+
+# ─── Individual format targets ────────────────────────────────────────────────
+# Build a single package format without cutting a full release.
+# Usage: make deb VERSION=2026-04-03-00
+
+deb:
+	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make deb VERSION=2026-04-03-00)" && exit 1)
+	PATH="$(HOME)/bin:$(PATH)" ./scripts/release.sh $(VERSION) \
+	    --skip-flatpak --skip-appimage --skip-rpm --skip-pacman --skip-aur --skip-github
+
+rpm:
+	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make rpm VERSION=2026-04-03-00)" && exit 1)
+	PATH="$(HOME)/bin:$(PATH)" ./scripts/release.sh $(VERSION) \
+	    --skip-flatpak --skip-appimage --skip-deb --skip-pacman --skip-aur --skip-github
+
+appimage:
+	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make appimage VERSION=2026-04-03-00)" && exit 1)
+	PATH="$(HOME)/bin:$(PATH)" ./scripts/release.sh $(VERSION) \
+	    --skip-flatpak --skip-deb --skip-rpm --skip-pacman --skip-aur --skip-github
+
+flatpak:
+	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make flatpak VERSION=2026-04-03-00)" && exit 1)
+	PATH="$(HOME)/bin:$(PATH)" ./scripts/release.sh $(VERSION) \
+	    --skip-appimage --skip-deb --skip-rpm --skip-pacman --skip-aur --skip-github
+
+# Publish already-built artifacts in dist/<VERSION>/ to GitHub without rebuilding.
+# Usage: make gh-release VERSION=2026-04-03-00
+gh-release:
+	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make gh-release VERSION=2026-04-03-00)" && exit 1)
+	PATH="$(HOME)/bin:$(PATH)" ./scripts/release.sh $(VERSION) \
+	    --skip-flatpak --skip-appimage --skip-deb --skip-rpm --skip-pacman --skip-aur
