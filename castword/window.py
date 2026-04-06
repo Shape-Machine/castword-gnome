@@ -23,6 +23,7 @@ class CastwordWindow(Adw.Window):
         self._busy: bool = False
         self._prefs_open: bool = False
         self._transcribing_count: int = 0
+        self._recorder = None
 
         self.set_hide_on_close(True)
 
@@ -249,6 +250,7 @@ class CastwordWindow(Adw.Window):
     def _on_preferences_closed(self, prefs):
         self._prefs_open = False
         self._rebuild_tone_buttons()
+        self._maybe_start_recorder()
         return False
 
     def _prompt_shortcut_setup(self):
@@ -462,7 +464,7 @@ class CastwordWindow(Adw.Window):
 
     def _update_status_bar(self) -> None:
         """Sync the status bar label, icon/spinner, toggle button, and visibility."""
-        recording = hasattr(self, "_recorder") and self._recorder.is_running()
+        recording = self._recorder is not None and self._recorder.is_running()
         stt_enabled = self._settings.get_boolean("stt-enabled")
 
         if self._busy:

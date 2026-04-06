@@ -79,7 +79,14 @@ class AudioRecorder:
         if self._pipeline is not None:
             return  # already running
 
-        pipeline = Gst.parse_launch(self._PIPELINE_STR)
+        try:
+            pipeline = Gst.parse_launch(self._PIPELINE_STR)
+        except Exception as exc:
+            GLib.idle_add(self._on_error, f"Failed to start microphone: {exc}")
+            return
+        if pipeline is None:
+            GLib.idle_add(self._on_error, "Failed to start microphone pipeline.")
+            return
 
         sink = pipeline.get_by_name("sink")
         sink.connect("new-sample", self._on_new_sample)
@@ -106,7 +113,9 @@ class AudioRecorder:
 
         self._pipeline.set_state(Gst.State.NULL)
         self._pipeline = None
-        self._bus_watch_id = None
+        if self._bus_watch_id is not None:
+            GLib.source_remove(self._bus_watch_id)
+            self._bus_watch_id = None
 
     def is_running(self) -> bool:
         return self._pipeline is not None
