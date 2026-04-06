@@ -3,7 +3,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, GLib, Gio
+from gi.repository import Adw, Gio
 
 
 class CastwordApplication(Adw.Application):
@@ -30,9 +30,6 @@ class CastwordApplication(Adw.Application):
 
 
 def main():
-    # Must be called before any GLib/GTK initialisation.
-    GLib.set_prgname("castword")
-    GLib.set_application_name("Castword")
     app = CastwordApplication()
     return app.run(sys.argv)
 
