@@ -74,5 +74,28 @@
       <description>Set to true after the first-run shortcut prompt is shown, so it is never repeated.</description>
     </key>
 
+    <!-- STT (Phase 2) — API keys stored in libsecret, not here -->
+    <key name="stt-enabled" type="b">
+      <default>false</default>
+      <summary>Enable speech-to-text features</summary>
+      <description>Master switch for STT; shows the Speech preferences page and mic button.</description>
+    </key>
+
+    <key name="active-stt-provider" type="s">
+      <default>"whisper"</default>
+      <summary>Active STT provider</summary>
+      <description>One of: whisper, whisper-local, assemblyai</description>
+    </key>
+
+    <key name="whisper-model" type="s">
+      <default>"whisper-1"</default>
+      <summary>OpenAI Whisper model ID</summary>
+    </key>
+
+    <key name="whisper-local-model-path" type="s">
+      <default>""</default>
+      <summary>Path to local whisper.cpp model file (.bin)</summary>
+    </key>
+
   </schema>
 </schemalist>

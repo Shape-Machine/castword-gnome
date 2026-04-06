@@ -15,6 +15,9 @@ from castword.tones import default_tones, tones_from_settings
 _PROVIDERS = ["openai", "anthropic", "gemini", "ollama"]
 _PROVIDER_LABELS = ["OpenAI", "Anthropic", "Google Gemini", "Ollama"]
 
+_STT_PROVIDERS = ["whisper", "whisper-local", "assemblyai"]
+_STT_PROVIDER_LABELS = ["OpenAI Whisper", "Local Whisper (whisper.cpp)", "AssemblyAI"]
+
 
 class CastwordPreferences(Adw.PreferencesWindow):
     def __init__(self, **kwargs):
@@ -33,6 +36,7 @@ class CastwordPreferences(Adw.PreferencesWindow):
         self.add(self._build_tones_page())
         self.add(self._build_providers_page())
         self.add(self._build_behaviour_page())
+        self.add(self._build_speech_page())
 
     # ================================================================== #
     # Page 1 — Tones
@@ -406,19 +410,6 @@ class CastwordPreferences(Adw.PreferencesWindow):
         shortcut_row.add_suffix(open_kb_btn)
         shortcut_group.add(shortcut_row)
 
-        # STT placeholder (Phase 2)
-        stt_group = Adw.PreferencesGroup(title="Voice Input (Phase 2)")
-        page.add(stt_group)
-
-        stt_row = Adw.ActionRow(
-            title="Speech-to-Text Provider",
-            subtitle="Coming in Phase 2",
-            sensitive=False,
-        )
-        stt_row.add_suffix(Gtk.Image(icon_name="audio-input-microphone-symbolic",
-                                     valign=Gtk.Align.CENTER))
-        stt_group.add(stt_row)
-
         return page
 
     def _on_output_mode_changed(self, combo, _param):
@@ -431,3 +422,91 @@ class CastwordPreferences(Adw.PreferencesWindow):
             subprocess.Popen(["gnome-control-center", "keyboard"], start_new_session=True)
         except FileNotFoundError:
             pass
+
+    # ================================================================== #
+    # Page 4 — Speech (STT stubs, Phase 2)
+    # ================================================================== #
+
+    def _build_speech_page(self) -> Adw.PreferencesPage:
+        page = Adw.PreferencesPage(title="Speech", icon_name="audio-input-microphone-symbolic")
+
+        # Provider selector
+        selector_group = Adw.PreferencesGroup(title="Speech Provider")
+        page.add(selector_group)
+
+        self._stt_combo = Adw.ComboRow(title="Provider")
+        stt_model = Gtk.StringList.new(_STT_PROVIDER_LABELS)
+        self._stt_combo.set_model(stt_model)
+        active_stt = self._settings.get_string("active-stt-provider")
+        if active_stt not in _STT_PROVIDERS:
+            active_stt = _STT_PROVIDERS[0]
+        self._stt_combo.set_selected(_STT_PROVIDERS.index(active_stt))
+        self._stt_combo.connect("notify::selected", self._on_stt_provider_changed)
+        selector_group.add(self._stt_combo)
+
+        # OpenAI Whisper settings
+        whisper_group = Adw.PreferencesGroup(title="OpenAI Whisper Settings")
+
+        whisper_key = Adw.PasswordEntryRow(title="OpenAI API Key")
+        self._prefill_key("whisper", whisper_key)
+        whisper_key.connect("apply", self._on_key_changed, "whisper")
+        wk_focus = Gtk.EventControllerFocus()
+        wk_focus.connect("leave", lambda _c, e=whisper_key: self._on_key_changed(e, "whisper"))
+        whisper_key.add_controller(wk_focus)
+        whisper_group.add(whisper_key)
+
+        whisper_model_entry = Adw.EntryRow(title="Model")
+        whisper_model_entry.set_text(self._settings.get_string("whisper-model"))
+        whisper_model_entry.connect("changed", lambda r: self._settings.set_string("whisper-model", r.get_text()))
+        whisper_group.add(whisper_model_entry)
+        page.add(whisper_group)
+
+        # Local Whisper settings
+        whisper_local_group = Adw.PreferencesGroup(title="Local Whisper Settings")
+
+        model_path_entry = Adw.EntryRow(title="Model path (.bin file)")
+        model_path_entry.set_text(self._settings.get_string("whisper-local-model-path"))
+        model_path_entry.connect("changed", lambda r: self._settings.set_string("whisper-local-model-path", r.get_text()))
+        whisper_local_group.add(model_path_entry)
+        page.add(whisper_local_group)
+
+        # AssemblyAI settings
+        assemblyai_group = Adw.PreferencesGroup(title="AssemblyAI Settings")
+
+        assemblyai_key = Adw.PasswordEntryRow(title="AssemblyAI API Key")
+        self._prefill_key("assemblyai", assemblyai_key)
+        assemblyai_key.connect("apply", self._on_key_changed, "assemblyai")
+        ak_focus = Gtk.EventControllerFocus()
+        ak_focus.connect("leave", lambda _c, e=assemblyai_key: self._on_key_changed(e, "assemblyai"))
+        assemblyai_key.add_controller(ak_focus)
+        assemblyai_group.add(assemblyai_key)
+        page.add(assemblyai_group)
+
+        # Test connection (stub — disabled until Phase 2 implementation)
+        test_group = Adw.PreferencesGroup()
+        test_row = Adw.ActionRow(
+            title="Test STT Connection",
+            subtitle="Coming in Phase 2",
+            sensitive=False,
+        )
+        test_group.add(test_row)
+        page.add(test_group)
+
+        # Track groups for show/hide on provider switch
+        self._stt_groups = {
+            "whisper": whisper_group,
+            "whisper-local": whisper_local_group,
+            "assemblyai": assemblyai_group,
+        }
+        self._update_stt_visibility(active_stt)
+        return page
+
+    def _on_stt_provider_changed(self, combo, _param):
+        idx = combo.get_selected()
+        provider_id = _STT_PROVIDERS[idx]
+        self._settings.set_string("active-stt-provider", provider_id)
+        self._update_stt_visibility(provider_id)
+
+    def _update_stt_visibility(self, active_provider: str):
+        for provider_id, group in self._stt_groups.items():
+            group.set_visible(provider_id == active_provider)
