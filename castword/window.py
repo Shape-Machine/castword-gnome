@@ -13,10 +13,10 @@ from castword.diff import word_diff
 from castword.tones import tones_from_settings
 
 
-class CastwordWindow(Adw.Window):
+class CastwordWindow(Adw.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.set_title("castword")
+        self.set_title("Castword")
         self.set_default_size(680, -1)
         self.set_resizable(False)
 
