@@ -98,13 +98,30 @@ class CastwordWindow(Adw.Window):
         content.append(input_scroll)
 
         # ── Tone buttons row ──────────────────────────────────────────
+        tone_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        content.append(tone_row)
+
         tone_scroll = Gtk.ScrolledWindow(
             vscrollbar_policy=Gtk.PolicyType.NEVER,
             hscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
+            hexpand=True,
         )
         self._tone_box = Gtk.Box(spacing=8)
         tone_scroll.set_child(self._tone_box)
-        content.append(tone_scroll)
+        tone_row.append(tone_scroll)
+
+        # STT INTEGRATION POINT (Phase 2):
+        # When mic button is clicked:
+        #   1. Record audio via GStreamer pipeline
+        #   2. provider = make_stt_provider(self._settings)
+        #   3. text = await provider.transcribe(audio_bytes)
+        #   4. Populate _input_view buffer with transcribed text
+        mic_btn = Gtk.Button(icon_name="audio-input-microphone-symbolic")
+        mic_btn.add_css_class("flat")
+        mic_btn.set_sensitive(False)
+        mic_btn.set_tooltip_text("Speech input — coming in Phase 2")
+        mic_btn.set_margin_start(4)
+        tone_row.append(mic_btn)
 
         self._tone_buttons: list[Gtk.Button] = []
         self._rebuild_tone_buttons()

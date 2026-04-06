@@ -9,6 +9,10 @@ from castword.providers.openai_provider import OpenAIProvider
 from castword.providers.anthropic_provider import AnthropicProvider
 from castword.providers.gemini_provider import GeminiProvider
 from castword.providers.ollama_provider import OllamaProvider
+from castword.providers.stt_base import BaseSpeechProvider
+from castword.providers.whisper_provider import WhisperProvider
+from castword.providers.whisper_local_provider import WhisperLocalProvider
+from castword.providers.assemblyai_provider import AssemblyAIProvider
 
 
 def make_provider(settings, provider_id: str | None = None) -> BaseProvider:
@@ -53,6 +57,30 @@ def make_provider(settings, provider_id: str | None = None) -> BaseProvider:
         )
 
     raise ProviderError(f"Unknown provider: {provider_name!r}")
+
+
+def make_stt_provider(settings) -> BaseSpeechProvider:
+    """Instantiate the active STT provider from a Gio.Settings object.
+
+    Returns a stub provider (all raise NotImplementedError in Phase 2).
+    Raises ProviderError if the provider ID is unknown or misconfigured.
+    """
+    name = settings.get_string("active-stt-provider")
+
+    if name == "whisper":
+        key = lookup_secret("whisper") or ""
+        return WhisperProvider(api_key=key, model=settings.get_string("whisper-model"))
+
+    if name == "whisper-local":
+        return WhisperLocalProvider(
+            model_path=settings.get_string("whisper-local-model-path")
+        )
+
+    if name == "assemblyai":
+        key = lookup_secret("assemblyai") or ""
+        return AssemblyAIProvider(api_key=key)
+
+    raise ProviderError(f"Unknown STT provider: {name!r}")
 
 
 def _get_secret(Secret, provider: str) -> str | None:
