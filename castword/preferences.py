@@ -547,13 +547,16 @@ class CastwordPreferences(Adw.PreferencesWindow):
 
         page.add(whisper_local_group)
 
-        # Test connection (stub — disabled until Phase 2 implementation)
+        # Test connection
         test_group = Adw.PreferencesGroup()
-        test_row = Adw.ActionRow(
-            title="Test STT Connection",
-            subtitle="Coming in Phase 2",
-            sensitive=False,
-        )
+        test_btn = Gtk.Button(label="Test STT Connection")
+        test_btn.add_css_class("pill")
+        test_btn.set_margin_top(4)
+        test_btn.set_margin_bottom(4)
+        test_btn.set_halign(Gtk.Align.START)
+        test_btn.connect("clicked", self._on_test_stt_connection)
+        test_row = Adw.ActionRow()
+        test_row.add_suffix(test_btn)
         test_group.add(test_row)
         page.add(test_group)
 
@@ -574,6 +577,46 @@ class CastwordPreferences(Adw.PreferencesWindow):
     def _update_stt_visibility(self, active_provider: str):
         for provider_id, group in self._stt_groups.items():
             group.set_visible(provider_id == active_provider)
+
+    def _on_test_stt_connection(self, btn):
+        from castword.providers import make_stt_provider
+        try:
+            provider = make_stt_provider(self._settings)
+        except Exception as exc:
+            self._on_stt_test_done(btn, False, str(exc))
+            return
+        btn.set_sensitive(False)
+        threading.Thread(
+            target=self._test_stt_thread,
+            args=(btn, provider),
+            daemon=True,
+        ).start()
+
+    def _test_stt_thread(self, btn, provider):
+        import asyncio
+        import io
+        import wave
+
+        n_samples = 16000  # 1 second at 16 kHz
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(16000)
+            wf.writeframes(b"\x00" * n_samples * 2)
+        silent_wav = buf.getvalue()
+
+        try:
+            asyncio.run(provider.transcribe(silent_wav))
+            GLib.idle_add(self._on_stt_test_done, btn, True, "Connection successful")
+        except Exception as exc:
+            GLib.idle_add(self._on_stt_test_done, btn, False, str(exc))
+
+    def _on_stt_test_done(self, btn, success: bool, message: str):
+        btn.set_sensitive(True)
+        toast = Adw.Toast(title=("✓ " if success else "✗ ") + message, timeout=4)
+        self.add_toast(toast)
+        return GLib.SOURCE_REMOVE
 
     def _switch_to_providers_page(self):
         """Navigate to the Providers preferences page."""
