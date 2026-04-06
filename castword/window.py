@@ -278,12 +278,11 @@ class CastwordWindow(Adw.ApplicationWindow):
         from castword.about import show_about
         self._prefs_open = True
         dialog = show_about(self)
-        dialog.connect("closed", lambda _: (setattr(self, "_prefs_open", False), self._maybe_start_recorder()))
+        dialog.connect("closed", lambda _: setattr(self, "_prefs_open", False))
 
     def _on_preferences_closed(self, prefs):
         self._prefs_open = False
         self._rebuild_tone_buttons()
-        self._maybe_start_recorder()
         return False
 
     def _prompt_shortcut_setup(self):
@@ -444,9 +443,7 @@ class CastwordWindow(Adw.ApplicationWindow):
     # ------------------------------------------------------------------ #
 
     def _on_stt_enabled_changed(self, settings, key) -> None:
-        if settings.get_boolean(key):
-            self._maybe_start_recorder()
-        else:
+        if not settings.get_boolean(key):
             if self._recorder and self._recorder.is_running():
                 self._recorder.stop()
                 self._set_mic_recording(False)
