@@ -1,4 +1,6 @@
 import io
+import math
+import struct
 import threading
 import time
 import wave
@@ -28,6 +30,7 @@ class AudioRecorder:
     SILENCE_DURATION_S   = 1.5     # seconds of silence before emitting a chunk
     MAX_CHUNK_DURATION_S = 30.0    # safety flush regardless of silence
     IDLE_TIMEOUT_S       = 5.0     # auto-stop after this many seconds without speech
+    MIN_CHUNK_RMS_DB     = -38.0   # discard chunks whose average energy is below this
     SAMPLE_RATE          = 16000
 
     _PIPELINE_STR = (
@@ -210,22 +213,40 @@ class AudioRecorder:
             GLib.idle_add(self._on_idle)
 
     def _flush_chunk(self) -> None:
-        """Emit accumulated PCM as a WAV chunk if it contains speech."""
+        """Emit accumulated PCM as a WAV chunk if it contains real speech."""
         with self._lock:
             if not self._has_speech or len(self._pcm_buffer) == 0:
                 return
-            wav_bytes = self._pcm_to_wav(bytes(self._pcm_buffer))
+            pcm = bytes(self._pcm_buffer)
             self._pcm_buffer.clear()
 
         self._has_speech = False
         self._silence_start = None
         self._chunk_start = time.monotonic()
 
-        GLib.idle_add(self._on_chunk, wav_bytes)
+        # Discard chunks whose average energy is too low — likely background
+        # noise that briefly crossed the per-frame silence threshold.
+        if self._chunk_rms_db(pcm) < self.MIN_CHUNK_RMS_DB:
+            return
+
+        GLib.idle_add(self._on_chunk, self._pcm_to_wav(pcm))
 
     # ------------------------------------------------------------------ #
     # WAV encoding (stdlib only)
     # ------------------------------------------------------------------ #
+
+    @staticmethod
+    def _chunk_rms_db(pcm: bytes) -> float:
+        """Return the RMS level of a S16LE PCM buffer in dBFS."""
+        n = len(pcm) // 2
+        if n == 0:
+            return -math.inf
+        samples = struct.unpack_from(f"<{n}h", pcm)
+        mean_sq = sum(s * s for s in samples) / n
+        rms_linear = math.sqrt(mean_sq) / 32768.0
+        if rms_linear < 1e-9:
+            return -math.inf
+        return 20.0 * math.log10(rms_linear)
 
     @staticmethod
     def _pcm_to_wav(pcm: bytes, sample_rate: int = SAMPLE_RATE) -> bytes:
