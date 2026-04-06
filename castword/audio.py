@@ -26,6 +26,7 @@ class AudioRecorder:
 
     SILENCE_THRESHOLD_DB = -40.0   # RMS below this = silence (dBFS)
     SPEECH_THRESHOLD_DB  = -35.0   # RMS must exceed this to count as real speech
+    SPEECH_MIN_FRAMES    = 3       # consecutive frames above SPEECH_THRESHOLD_DB required
     SILENCE_DURATION_S   = 1.5     # seconds of silence before emitting a chunk
     MAX_CHUNK_DURATION_S = 30.0    # safety flush regardless of silence
     IDLE_TIMEOUT_S       = 5.0     # auto-stop after this many seconds without real speech
@@ -59,7 +60,8 @@ class AudioRecorder:
 
         # Silence / chunk state — only accessed on main thread (bus watch callback)
         self._has_speech = False
-        self._has_real_speech = False   # any frame in current chunk exceeded SPEECH_THRESHOLD_DB
+        self._has_real_speech = False   # sustained speech confirmed in current chunk
+        self._speech_run = 0            # consecutive frames above SPEECH_THRESHOLD_DB
         self._silence_start: float | None = None
         self._chunk_start: float | None = None
         self._last_speech_time: float | None = None
@@ -100,6 +102,7 @@ class AudioRecorder:
             self._pcm_buffer.clear()
         self._has_speech = False
         self._has_real_speech = False
+        self._speech_run = 0
         self._silence_start = None
         self._chunk_start = time.monotonic()
         self._last_speech_time = time.monotonic()  # enables idle timeout before first speech
@@ -184,9 +187,14 @@ class AudioRecorder:
             self._has_speech = True
             self._silence_start = None
             if rms_db >= self.SPEECH_THRESHOLD_DB:
-                self._last_speech_time = now
-                self._has_real_speech = True
+                self._speech_run += 1
+                if self._speech_run >= self.SPEECH_MIN_FRAMES:
+                    self._last_speech_time = now
+                    self._has_real_speech = True
+            else:
+                self._speech_run = 0  # signal dropped back below speech threshold
         else:
+            self._speech_run = 0
             if self._silence_start is None:
                 self._silence_start = now
             # No speech yet — discard accumulated buffer to prevent unbounded growth
@@ -225,6 +233,7 @@ class AudioRecorder:
         has_real_speech = self._has_real_speech
         self._has_speech = False
         self._has_real_speech = False
+        self._speech_run = 0
         self._silence_start = None
         self._chunk_start = time.monotonic()
 
