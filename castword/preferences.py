@@ -1,5 +1,8 @@
 import asyncio
+import glob
 import json
+import os
+import shutil
 import threading
 
 import gi
@@ -10,6 +13,28 @@ from gi.repository import Adw, GLib, Gio, Gtk
 
 from castword.providers.base import Tone
 from castword.tones import default_tones, tones_from_settings
+
+
+def _detect_whisper_binary() -> str | None:
+    for name in ("whisper-cli", "whisper-cpp", "whisper"):
+        path = shutil.which(name)
+        if path:
+            return path
+    return None
+
+
+def _scan_whisper_models() -> list[str]:
+    dirs = [
+        "/usr/share/whisper.cpp/models",
+        os.path.expanduser("~/.local/share/whisper.cpp/models"),
+        os.path.expanduser("~/whisper.cpp/models"),
+        os.path.expanduser("~/.cache/whisper"),
+    ]
+    found = []
+    for d in dirs:
+        for p in sorted(glob.glob(os.path.join(d, "*.bin"))):
+            found.append(p)
+    return found
 
 
 _PROVIDERS = ["openai", "anthropic", "gemini", "ollama"]
@@ -417,6 +442,16 @@ class CastwordPreferences(Adw.PreferencesWindow):
         modes = ["clipboard+diff", "clipboard", "replace"]
         self._settings.set_string("output-mode", modes[combo.get_selected()])
 
+    def _auto_detect_whisper_binary(self, entry: Adw.EntryRow) -> None:
+        path = _detect_whisper_binary()
+        if path:
+            entry.set_text(path)
+        else:
+            entry.set_text("")
+            # Brief visual feedback via the entry's error state
+            entry.add_css_class("error")
+            GLib.timeout_add(1500, lambda: (entry.remove_css_class("error"), GLib.SOURCE_REMOVE)[1])
+
     def _on_open_keyboard_settings(self, btn):
         import subprocess
         try:
@@ -476,15 +511,40 @@ class CastwordPreferences(Adw.PreferencesWindow):
         # Local Whisper settings
         whisper_local_group = Adw.PreferencesGroup(title="Local Whisper Settings")
 
+        # Binary path — with auto-detect button
+        saved_binary = self._settings.get_string("whisper-local-binary-path")
+        binary_path_entry = Adw.EntryRow(title="Binary path")
+        binary_path_entry.set_text(saved_binary or _detect_whisper_binary() or "")
+        binary_path_entry.connect("changed", lambda r: self._settings.set_string("whisper-local-binary-path", r.get_text()))
+
+        detect_btn = Gtk.Button(icon_name="edit-find-symbolic", valign=Gtk.Align.CENTER)
+        detect_btn.add_css_class("flat")
+        detect_btn.set_tooltip_text("Auto-detect binary")
+        detect_btn.set_can_focus(False)
+        detect_btn.connect("clicked", lambda _: self._auto_detect_whisper_binary(binary_path_entry))
+        binary_path_entry.add_suffix(detect_btn)
+        whisper_local_group.add(binary_path_entry)
+
+        # Model path — manual entry
         model_path_entry = Adw.EntryRow(title="Model path (.bin file)")
         model_path_entry.set_text(self._settings.get_string("whisper-local-model-path"))
         model_path_entry.connect("changed", lambda r: self._settings.set_string("whisper-local-model-path", r.get_text()))
         whisper_local_group.add(model_path_entry)
 
-        binary_path_entry = Adw.EntryRow(title="Binary path")
-        binary_path_entry.set_text(self._settings.get_string("whisper-local-binary-path"))
-        binary_path_entry.connect("changed", lambda r: self._settings.set_string("whisper-local-binary-path", r.get_text()))
-        whisper_local_group.add(binary_path_entry)
+        # Detected models — clickable rows inside the same group
+        detected_models = _scan_whisper_models()
+        if detected_models:
+            whisper_local_group.set_description("Detected models — click to select:")
+            for model_path in detected_models:
+                row = Adw.ActionRow(
+                    title=os.path.basename(model_path),
+                    subtitle=os.path.dirname(model_path),
+                    activatable=True,
+                )
+                row.add_suffix(Gtk.Image(icon_name="go-next-symbolic", valign=Gtk.Align.CENTER))
+                row.connect("activated", lambda _r, p=model_path: model_path_entry.set_text(p))
+                whisper_local_group.add(row)
+
         page.add(whisper_local_group)
 
         # AssemblyAI settings
