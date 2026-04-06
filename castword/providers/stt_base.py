@@ -6,15 +6,11 @@ from abc import ABC, abstractmethod
 _WHISPER_HALLUCINATIONS = {
     "thank you for watching",
     "thanks for watching",
-    "thank you",
-    "thanks",
     "please subscribe",
     "like and subscribe",
     "subscribe and like",
     "see you next time",
     "see you in the next video",
-    "bye",
-    "goodbye",
 }
 
 _STRIP_PUNCT = re.compile(r"[^\w\s]")

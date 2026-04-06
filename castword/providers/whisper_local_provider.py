@@ -24,7 +24,6 @@ class WhisperLocalProvider(BaseSpeechProvider):
                 self._binary_path,
                 "--model", self._model_path,
                 "--output-txt",   # writes transcript to <input>.txt
-                "--no-prints",    # suppress progress/log output
                 "-nt",            # no timestamps in transcript
                 tmp_path,
                 stdout=asyncio.subprocess.DEVNULL,
