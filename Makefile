@@ -149,6 +149,8 @@ release-deps:
 # Usage: make release VERSION=2026-04-03-00
 release:
 	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make release VERSION=2026-04-03-00)" && exit 1)
+	@git rev-parse --abbrev-ref HEAD | grep -q '^main$$' || \
+	    (echo "ERROR: make release must be run from the main branch" && exit 1)
 	@echo "==> Bumping version to $(VERSION)"
 	$(eval PYVER := $(subst -,.,$(VERSION)))
 	sed -i 's/^version = ".*"/version = "$(PYVER)"/' pyproject.toml
@@ -161,7 +163,8 @@ release:
 	git add pyproject.toml packaging/debian/changelog
 	git commit -m "chore: release v$(VERSION)"
 	git tag "v$(VERSION)"
-	git push origin main "v$(VERSION)"
+	git push origin main "v$(VERSION)" || \
+	    (echo "ERROR: push failed. To retry: git tag -d v$(VERSION) && git reset HEAD~1 and re-run" && exit 1)
 	@echo "==> Building and publishing"
 	PATH="$(HOME)/bin:$(PATH)" ./scripts/release.sh $(VERSION)
 
