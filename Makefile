@@ -75,7 +75,7 @@ install-desktop:
 	mkdir -p $(APPLICATIONS_DIR)
 	cp $(DESKTOP_SRC) $(APPLICATIONS_DIR)/
 ifeq ($(DESTDIR),)
-	update-desktop-database $(APPLICATIONS_DIR) 2>/dev/null || true
+	update-desktop-database $(APPLICATIONS_DIR) || echo "Warning: update-desktop-database failed — GNOME Shell may not pick up the desktop entry until you log out and back in"
 endif
 	@echo "Installed desktop file."
 
@@ -84,14 +84,14 @@ install-icons:
 	cp $(ICONS_SRC_DIR)/scalable/apps/xyz.shapemachine.castword-gnome.svg \
 	   $(ICONS_DEST_DIR)/scalable/apps/
 ifeq ($(DESTDIR),)
-	gtk-update-icon-cache -f -t $(ICONS_DEST_DIR) 2>/dev/null || true
+	gtk-update-icon-cache -f -t $(ICONS_DEST_DIR) || echo "Warning: icon cache update failed — run 'gtk-update-icon-cache -f -t $(ICONS_DEST_DIR)' manually"
 endif
 	@echo "Installed icons."
 
 uninstall-icons:
 	rm -f $(ICONS_DEST_DIR)/scalable/apps/xyz.shapemachine.castword-gnome.svg
 ifeq ($(DESTDIR),)
-	gtk-update-icon-cache -f -t $(ICONS_DEST_DIR) 2>/dev/null || true
+	gtk-update-icon-cache -f -t $(ICONS_DEST_DIR) || echo "Warning: icon cache update failed — run 'gtk-update-icon-cache -f -t $(ICONS_DEST_DIR)' manually"
 endif
 	@echo "Uninstalled icons."
 

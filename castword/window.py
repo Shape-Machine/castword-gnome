@@ -311,7 +311,6 @@ class CastwordWindow(Adw.ApplicationWindow):
     def _on_shortcut_prompt_response(self, dialog, response):
         self._prefs_open = False
         if response != "setup":
-            self._maybe_start_recorder()
             return
         from castword.shortcuts import find_conflicting_shortcut, format_binding, DEFAULT_BINDING
         conflict_path, conflict_name = find_conflicting_shortcut(DEFAULT_BINDING)
@@ -335,7 +334,6 @@ class CastwordWindow(Adw.ApplicationWindow):
     def _on_conflict_response(self, dialog, response, conflict_path: str):
         self._prefs_open = False
         if response != "replace":
-            self._maybe_start_recorder()
             return
         from castword.shortcuts import clear_shortcut_binding
         clear_shortcut_binding(conflict_path)
