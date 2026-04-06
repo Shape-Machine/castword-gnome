@@ -22,6 +22,7 @@ class CastwordWindow(Adw.Window):
         self._settings = Gio.Settings(schema_id="xyz.shapemachine.castword-gnome")
         self._busy: bool = False
         self._prefs_open: bool = False
+        self._transcribing_count: int = 0
 
         self.set_hide_on_close(True)
 
@@ -31,6 +32,7 @@ class CastwordWindow(Adw.Window):
         self._recorder = AudioRecorder(
             on_chunk=self._on_audio_chunk,
             on_error=self._show_banner,
+            on_idle=self._on_mic_idle,
         )
         self.connect("show", self._on_window_shown)
         self.connect("hide", self._on_window_hidden)
@@ -105,35 +107,44 @@ class CastwordWindow(Adw.Window):
         input_scroll.set_child(self._input_view)
         content.append(input_scroll)
 
-        # ── Recording status bar (hidden when stt-enabled is off) ────────
-        recording_bar = Gtk.Box(
+        # ── Status bar (rewrite + STT states) ────────────────────────────
+        self._status_bar = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
             spacing=8,
+            visible=False,
         )
-        recording_bar.add_css_class("card")
+        self._status_bar.add_css_class("card")
+
+        # Left: stack that switches between an icon and a spinner
+        self._status_icon_stack = Gtk.Stack()
+        self._status_icon_stack.set_margin_start(10)
+        self._status_icon_stack.set_margin_top(8)
+        self._status_icon_stack.set_margin_bottom(8)
+        self._status_icon_stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
 
         self._recording_status_icon = Gtk.Image()
-        self._recording_status_icon.set_margin_start(10)
-        self._recording_status_icon.set_margin_top(8)
-        self._recording_status_icon.set_margin_bottom(8)
+        self._status_icon_stack.add_named(self._recording_status_icon, "icon")
+
+        self._status_spinner = Gtk.Spinner()
+        self._status_icon_stack.add_named(self._status_spinner, "spinner")
 
         self._recording_status_label = Gtk.Label(hexpand=True, xalign=0.0)
         self._recording_status_label.set_margin_start(2)
 
         self._recording_toggle_btn = Gtk.Button()
         self._recording_toggle_btn.add_css_class("flat")
+        self._recording_toggle_btn.set_can_focus(False)
         self._recording_toggle_btn.set_margin_end(4)
         self._recording_toggle_btn.set_margin_top(4)
         self._recording_toggle_btn.set_margin_bottom(4)
         self._recording_toggle_btn.connect("clicked", self._on_recording_toggle_clicked)
 
-        recording_bar.append(self._recording_status_icon)
-        recording_bar.append(self._recording_status_label)
-        recording_bar.append(self._recording_toggle_btn)
+        self._status_bar.append(self._status_icon_stack)
+        self._status_bar.append(self._recording_status_label)
+        self._status_bar.append(self._recording_toggle_btn)
 
-        self._settings.bind("stt-enabled", recording_bar, "visible", Gio.SettingsBindFlags.DEFAULT)
         self._set_mic_recording(False)  # initialise to paused visual state
-        content.append(recording_bar)
+        content.append(self._status_bar)
 
         # ── Tone buttons row ──────────────────────────────────────────
         tone_scroll = Gtk.ScrolledWindow(
@@ -146,10 +157,6 @@ class CastwordWindow(Adw.Window):
 
         self._tone_buttons: list[Gtk.Button] = []
         self._rebuild_tone_buttons()
-
-        # ── Spinner ───────────────────────────────────────────────────
-        self._spinner = Gtk.Spinner(visible=False)
-        content.append(self._spinner)
 
         # ── Diff panel ────────────────────────────────────────────────
         self._diff_scroll = Gtk.ScrolledWindow(
@@ -225,6 +232,9 @@ class CastwordWindow(Adw.Window):
         # Clear diff when input changes
         self._input_buffer.connect("changed", self._on_input_changed)
 
+        # Refresh status bar when STT is toggled in preferences
+        self._settings.connect("changed::stt-enabled", lambda *_: self._update_status_bar())
+
     # ------------------------------------------------------------------ #
     # Preferences
     # ------------------------------------------------------------------ #
@@ -247,6 +257,7 @@ class CastwordWindow(Adw.Window):
         _, binding = find_castword_shortcut()
         if binding is not None:
             self._prefs_open = False  # no dialog needed, unblock focus-out dismiss
+            self._maybe_start_recorder()
             return GLib.SOURCE_REMOVE  # already configured
 
         self._prefs_open = True
@@ -265,6 +276,7 @@ class CastwordWindow(Adw.Window):
     def _on_shortcut_prompt_response(self, dialog, response):
         self._prefs_open = False
         if response != "setup":
+            self._maybe_start_recorder()
             return
         from castword.shortcuts import find_conflicting_shortcut, format_binding, DEFAULT_BINDING
         conflict_path, conflict_name = find_conflicting_shortcut(DEFAULT_BINDING)
@@ -272,6 +284,7 @@ class CastwordWindow(Adw.Window):
             self._show_shortcut_conflict_dialog(conflict_path, conflict_name, format_binding(DEFAULT_BINDING))
         else:
             self._do_register_shortcut()
+            self._maybe_start_recorder()
 
     def _show_shortcut_conflict_dialog(self, conflict_path: str, conflict_name: str, binding_label: str):
         self._prefs_open = True
@@ -287,6 +300,7 @@ class CastwordWindow(Adw.Window):
 
     def _on_conflict_response(self, dialog, response, conflict_path: str):
         self._prefs_open = False
+        self._maybe_start_recorder()
         if response != "replace":
             return
         from castword.shortcuts import clear_shortcut_binding
@@ -398,7 +412,13 @@ class CastwordWindow(Adw.Window):
     # ------------------------------------------------------------------ #
 
     def _on_window_shown(self, _window) -> None:
-        if self._settings.get_boolean("stt-enabled") and not self._recorder.is_running():
+        self._maybe_start_recorder()
+
+    def _maybe_start_recorder(self) -> None:
+        if (self._settings.get_boolean("stt-enabled")
+                and not self._prefs_open
+                and not self._recorder.is_running()
+                and self.get_visible()):
             self._recorder.start()
             self._set_mic_recording(True)
 
@@ -407,27 +427,71 @@ class CastwordWindow(Adw.Window):
             self._recorder.stop()
             self._set_mic_recording(False)
 
-    def _on_recording_toggle_clicked(self, _btn) -> None:
+    def _on_mic_idle(self) -> None:
+        self.toggle_mic()
+        return GLib.SOURCE_REMOVE
+
+    def toggle_mic(self) -> None:
+        """Toggle mic pause/resume. No-op if STT is not enabled."""
+        if not self._settings.get_boolean("stt-enabled"):
+            return
         if self._recorder.is_running():
             self._recorder.stop()
             self._set_mic_recording(False)
+            self._toast_overlay.add_toast(Adw.Toast(title="Mic paused", timeout=2))
         else:
             self._recorder.start()
             self._set_mic_recording(True)
+            self._toast_overlay.add_toast(Adw.Toast(title="Mic recording", timeout=2))
+
+    def _on_recording_toggle_clicked(self, _btn) -> None:
+        self.toggle_mic()
 
     def _set_mic_recording(self, recording: bool) -> None:
         if recording:
             self._recording_status_icon.set_from_icon_name("media-record-symbolic")
             self._recording_status_icon.add_css_class("error")   # red in Adwaita
             self._recording_status_icon.remove_css_class("dim-label")
-            self._recording_status_label.set_text("Listening...")
             self._recording_toggle_btn.set_label("Pause")
         else:
             self._recording_status_icon.set_from_icon_name("audio-input-microphone-symbolic")
             self._recording_status_icon.remove_css_class("error")
             self._recording_status_icon.add_css_class("dim-label")
-            self._recording_status_label.set_text("Microphone paused")
             self._recording_toggle_btn.set_label("Resume")
+        self._update_status_bar()
+
+    def _update_status_bar(self) -> None:
+        """Sync the status bar label, icon/spinner, toggle button, and visibility."""
+        recording = hasattr(self, "_recorder") and self._recorder.is_running()
+        stt_enabled = self._settings.get_boolean("stt-enabled")
+
+        if self._busy:
+            self._recording_status_label.set_text("Rewriting...")
+            self._status_icon_stack.set_visible_child_name("spinner")
+            self._status_spinner.start()
+            self._recording_toggle_btn.set_sensitive(False)
+            self._status_bar.set_visible(True)
+        elif self._transcribing_count > 0:
+            self._recording_status_label.set_text("Transcribing...")
+            self._status_icon_stack.set_visible_child_name("spinner")
+            self._status_spinner.start()
+            self._recording_toggle_btn.set_sensitive(False)
+            self._status_bar.set_visible(True)
+        elif recording:
+            self._recording_status_label.set_text("Listening...")
+            self._status_icon_stack.set_visible_child_name("icon")
+            self._status_spinner.stop()
+            self._recording_toggle_btn.set_sensitive(True)
+            self._status_bar.set_visible(True)
+        elif stt_enabled:
+            self._recording_status_label.set_text("Microphone paused")
+            self._status_icon_stack.set_visible_child_name("icon")
+            self._status_spinner.stop()
+            self._recording_toggle_btn.set_sensitive(True)
+            self._status_bar.set_visible(True)
+        else:
+            self._status_spinner.stop()
+            self._status_bar.set_visible(False)
 
     # ------------------------------------------------------------------ #
     # STT transcription — audio chunk → text
@@ -442,6 +506,9 @@ class CastwordWindow(Adw.Window):
             self._show_banner(str(exc))
             return
 
+        self._transcribing_count += 1
+        self._update_status_bar()
+
         threading.Thread(
             target=self._transcribe_thread,
             args=(wav_bytes, provider),
@@ -453,21 +520,29 @@ class CastwordWindow(Adw.Window):
             text = asyncio.run(provider.transcribe(wav_bytes))
             if text.strip():
                 GLib.idle_add(self._on_transcription_done, text)
+            else:
+                GLib.idle_add(self._on_transcription_done, None)
         except Exception as exc:
             GLib.idle_add(self._on_transcription_error, str(exc))
 
-    def _on_transcription_done(self, text: str):
-        buf = self._input_buffer
-        existing = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
-        sep = " " if existing.strip() else ""
-        buf.insert(buf.get_end_iter(), sep + text.strip())
+    def _on_transcription_done(self, text: str | None):
+        self._transcribing_count = max(0, self._transcribing_count - 1)
+        self._update_status_bar()
 
-        # Auto-copy the full accumulated text
-        full_text = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
-        self._copy_to_clipboard(full_text)
+        if text:
+            buf = self._input_buffer
+            existing = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
+            sep = " " if existing.strip() else ""
+            buf.insert(buf.get_end_iter(), sep + text.strip())
+
+            # Auto-copy the full accumulated text
+            full_text = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
+            self._copy_to_clipboard(full_text)
         return GLib.SOURCE_REMOVE
 
     def _on_transcription_error(self, message: str):
+        self._transcribing_count = max(0, self._transcribing_count - 1)
+        self._update_status_bar()
         self._show_banner(message)
         return GLib.SOURCE_REMOVE
 
@@ -508,11 +583,7 @@ class CastwordWindow(Adw.Window):
         self._busy = busy
         for btn in self._tone_buttons:
             btn.set_sensitive(not busy)
-        self._spinner.set_visible(busy)
-        if busy:
-            self._spinner.start()
-        else:
-            self._spinner.stop()
+        self._update_status_bar()
 
     # ------------------------------------------------------------------ #
     # Error banner

@@ -27,6 +27,7 @@ class AudioRecorder:
     SILENCE_THRESHOLD_DB = -40.0   # RMS below this = silence (dBFS)
     SILENCE_DURATION_S   = 1.5     # seconds of silence before emitting a chunk
     MAX_CHUNK_DURATION_S = 30.0    # safety flush regardless of silence
+    IDLE_TIMEOUT_S       = 5.0     # auto-stop after this many seconds without speech
     SAMPLE_RATE          = 16000
 
     _PIPELINE_STR = (
@@ -38,13 +39,16 @@ class AudioRecorder:
         "appsink name=sink emit-signals=true max-buffers=200 drop=false"
     )
 
-    def __init__(self, on_chunk, on_error):
+    def __init__(self, on_chunk, on_error, on_idle=None):
         """
         on_chunk(wav_bytes: bytes) — called on GTK main thread with a WAV buffer
         on_error(message: str)    — called on GTK main thread on pipeline error
+        on_idle()                 — called on GTK main thread after IDLE_TIMEOUT_S
+                                    of continuous silence with no speech
         """
         self._on_chunk = on_chunk
         self._on_error = on_error
+        self._on_idle = on_idle
         self._pipeline = None
         self._bus_watch_id = None
 
@@ -56,6 +60,7 @@ class AudioRecorder:
         self._has_speech = False
         self._silence_start: float | None = None
         self._chunk_start: float | None = None
+        self._last_speech_time: float | None = None
 
     # ------------------------------------------------------------------ #
     # Public API
@@ -87,6 +92,7 @@ class AudioRecorder:
         self._has_speech = False
         self._silence_start = None
         self._chunk_start = time.monotonic()
+        self._last_speech_time = None
 
         pipeline.set_state(Gst.State.PLAYING)
         self._pipeline = pipeline
@@ -161,6 +167,7 @@ class AudioRecorder:
         if not is_silent:
             self._has_speech = True
             self._silence_start = None
+            self._last_speech_time = now
         else:
             if self._silence_start is None:
                 self._silence_start = now
@@ -175,6 +182,15 @@ class AudioRecorder:
         if (self._has_speech and self._chunk_start is not None
                 and (now - self._chunk_start) >= self.MAX_CHUNK_DURATION_S):
             self._flush_chunk()
+            return
+
+        # Idle auto-stop: no speech at all for too long
+        if (self._on_idle is not None
+                and self._last_speech_time is not None
+                and is_silent
+                and (now - self._last_speech_time) >= self.IDLE_TIMEOUT_S):
+            self._last_speech_time = None  # prevent repeated firing
+            GLib.idle_add(self._on_idle)
 
     def _flush_chunk(self) -> None:
         """Emit accumulated PCM as a WAV chunk if it contains speech."""
