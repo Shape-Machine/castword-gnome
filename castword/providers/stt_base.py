@@ -7,6 +7,6 @@ class BaseSpeechProvider(ABC):
         """Transcribe audio bytes to text.
 
         Returns the transcribed string.
-        Raises ProviderError on failure.
-        Raises NotImplementedError if the provider is a stub.
+        Raises ProviderError on failure (Phase 2 implementations).
+        Raises NotImplementedError for stub providers.
         """

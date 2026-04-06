@@ -34,7 +34,8 @@ class CastwordPreferences(Adw.PreferencesWindow):
 
     def _build_ui(self):
         self.add(self._build_tones_page())
-        self.add(self._build_providers_page())
+        self._providers_page = self._build_providers_page()
+        self.add(self._providers_page)
         self.add(self._build_behaviour_page())
         self.add(self._build_speech_page())
 
@@ -430,6 +431,16 @@ class CastwordPreferences(Adw.PreferencesWindow):
     def _build_speech_page(self) -> Adw.PreferencesPage:
         page = Adw.PreferencesPage(title="Speech", icon_name="audio-input-microphone-symbolic")
 
+        # Master switch
+        enable_group = Adw.PreferencesGroup()
+        enable_row = Adw.SwitchRow(
+            title="Enable Speech-to-Text",
+            subtitle="Shows mic button in the main window (Phase 2 — transcription coming soon)",
+        )
+        self._settings.bind("stt-enabled", enable_row, "active", Gio.SettingsBindFlags.DEFAULT)
+        enable_group.add(enable_row)
+        page.add(enable_group)
+
         # Provider selector
         selector_group = Adw.PreferencesGroup(title="Speech Provider")
         page.add(selector_group)
@@ -444,16 +455,17 @@ class CastwordPreferences(Adw.PreferencesWindow):
         self._stt_combo.connect("notify::selected", self._on_stt_provider_changed)
         selector_group.add(self._stt_combo)
 
-        # OpenAI Whisper settings
+        # OpenAI Whisper settings (reuses the OpenAI API key from Providers)
         whisper_group = Adw.PreferencesGroup(title="OpenAI Whisper Settings")
 
-        whisper_key = Adw.PasswordEntryRow(title="OpenAI API Key")
-        self._prefill_key("whisper", whisper_key)
-        whisper_key.connect("apply", self._on_key_changed, "whisper")
-        wk_focus = Gtk.EventControllerFocus()
-        wk_focus.connect("leave", lambda _c, e=whisper_key: self._on_key_changed(e, "whisper"))
-        whisper_key.add_controller(wk_focus)
-        whisper_group.add(whisper_key)
+        api_key_row = Adw.ActionRow(
+            title="API Key",
+            subtitle="Uses your OpenAI key — configure it in Providers",
+        )
+        api_key_row.add_suffix(Gtk.Image(icon_name="go-next-symbolic", valign=Gtk.Align.CENTER))
+        api_key_row.set_activatable(True)
+        api_key_row.connect("activated", lambda _r: self._switch_to_providers_page())
+        whisper_group.add(api_key_row)
 
         whisper_model_entry = Adw.EntryRow(title="Model")
         whisper_model_entry.set_text(self._settings.get_string("whisper-model"))
@@ -510,3 +522,8 @@ class CastwordPreferences(Adw.PreferencesWindow):
     def _update_stt_visibility(self, active_provider: str):
         for provider_id, group in self._stt_groups.items():
             group.set_visible(provider_id == active_provider)
+
+    def _switch_to_providers_page(self):
+        """Navigate to the Providers preferences page."""
+        # Pages are indexed in add() order: Tones=0, Providers=1, Behaviour=2, Speech=3
+        self.set_visible_page(self._providers_page)
