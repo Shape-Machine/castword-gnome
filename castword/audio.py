@@ -1,6 +1,4 @@
 import io
-import math
-import struct
 import threading
 import time
 import wave
@@ -27,11 +25,10 @@ class AudioRecorder:
     """
 
     SILENCE_THRESHOLD_DB = -40.0   # RMS below this = silence (dBFS)
-    SPEECH_THRESHOLD_DB  = -35.0   # RMS must exceed this to count as real speech for idle timer
+    SPEECH_THRESHOLD_DB  = -35.0   # RMS must exceed this to count as real speech
     SILENCE_DURATION_S   = 1.5     # seconds of silence before emitting a chunk
     MAX_CHUNK_DURATION_S = 30.0    # safety flush regardless of silence
-    IDLE_TIMEOUT_S       = 5.0     # auto-stop after this many seconds without speech
-    MIN_CHUNK_RMS_DB     = -38.0   # discard chunks whose average energy is below this
+    IDLE_TIMEOUT_S       = 5.0     # auto-stop after this many seconds without real speech
     SAMPLE_RATE          = 16000
 
     _PIPELINE_STR = (
@@ -62,6 +59,7 @@ class AudioRecorder:
 
         # Silence / chunk state — only accessed on main thread (bus watch callback)
         self._has_speech = False
+        self._has_real_speech = False   # any frame in current chunk exceeded SPEECH_THRESHOLD_DB
         self._silence_start: float | None = None
         self._chunk_start: float | None = None
         self._last_speech_time: float | None = None
@@ -101,6 +99,7 @@ class AudioRecorder:
         with self._lock:
             self._pcm_buffer.clear()
         self._has_speech = False
+        self._has_real_speech = False
         self._silence_start = None
         self._chunk_start = time.monotonic()
         self._last_speech_time = time.monotonic()  # enables idle timeout before first speech
@@ -186,6 +185,7 @@ class AudioRecorder:
             self._silence_start = None
             if rms_db >= self.SPEECH_THRESHOLD_DB:
                 self._last_speech_time = now
+                self._has_real_speech = True
         else:
             if self._silence_start is None:
                 self._silence_start = now
@@ -206,29 +206,31 @@ class AudioRecorder:
             self._flush_chunk()
             return
 
-        # Idle auto-stop: no speech at all for too long
+        # Idle auto-stop: no real speech for too long (don't require is_silent —
+        # background noise can hold is_silent False indefinitely)
         if (self._on_idle is not None
                 and self._last_speech_time is not None
-                and is_silent
                 and (now - self._last_speech_time) >= self.IDLE_TIMEOUT_S):
             self._last_speech_time = None  # prevent repeated firing
             GLib.idle_add(self._on_idle)
 
     def _flush_chunk(self) -> None:
-        """Emit accumulated PCM as a WAV chunk if it contains real speech."""
+        """Emit accumulated PCM as a WAV chunk only if it contains real speech."""
         with self._lock:
             if not self._has_speech or len(self._pcm_buffer) == 0:
                 return
             pcm = bytes(self._pcm_buffer)
             self._pcm_buffer.clear()
 
+        has_real_speech = self._has_real_speech
         self._has_speech = False
+        self._has_real_speech = False
         self._silence_start = None
         self._chunk_start = time.monotonic()
 
-        # Discard chunks whose average energy is too low — likely background
-        # noise that briefly crossed the per-frame silence threshold.
-        if self._chunk_rms_db(pcm) < self.MIN_CHUNK_RMS_DB:
+        # Discard chunks where no frame reached SPEECH_THRESHOLD_DB — background
+        # noise can flicker above SILENCE_THRESHOLD_DB without being real speech.
+        if not has_real_speech:
             return
 
         GLib.idle_add(self._on_chunk, self._pcm_to_wav(pcm))
@@ -236,19 +238,6 @@ class AudioRecorder:
     # ------------------------------------------------------------------ #
     # WAV encoding (stdlib only)
     # ------------------------------------------------------------------ #
-
-    @staticmethod
-    def _chunk_rms_db(pcm: bytes) -> float:
-        """Return the RMS level of a S16LE PCM buffer in dBFS."""
-        n = len(pcm) // 2
-        if n == 0:
-            return -math.inf
-        samples = struct.unpack_from(f"<{n}h", pcm)
-        mean_sq = sum(s * s for s in samples) / n
-        rms_linear = math.sqrt(mean_sq) / 32768.0
-        if rms_linear < 1e-9:
-            return -math.inf
-        return 20.0 * math.log10(rms_linear)
 
     @staticmethod
     def _pcm_to_wav(pcm: bytes, sample_rate: int = SAMPLE_RATE) -> bytes:
