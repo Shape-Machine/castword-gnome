@@ -67,8 +67,8 @@ class CastwordWindow(Adw.Window):
         header_bar.add_css_class("flat")
 
         menu = Gio.Menu()
-        menu.append("Preferences", "win.preferences")
-        menu.append("About Castword", "win.about")
+        menu.append("Preferences", "app.preferences")
+        menu.append("About Castword", "app.about")
 
         menu_btn = Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu)
         menu_btn.add_css_class("flat")
@@ -240,14 +240,15 @@ class CastwordWindow(Adw.Window):
         focus_ctrl.connect("leave", self._on_focus_out)
         self.add_controller(focus_ctrl)
 
-        # Window actions for menu items
+        # App-level actions for menu items (Adw.Window is not a Gio.ActionMap)
+        app = self.get_application()
         prefs_action = Gio.SimpleAction.new("preferences", None)
         prefs_action.connect("activate", self._on_open_preferences)
-        self.add_action(prefs_action)
+        app.add_action(prefs_action)
 
         about_action = Gio.SimpleAction.new("about", None)
         about_action.connect("activate", self._on_open_about)
-        self.add_action(about_action)
+        app.add_action(about_action)
 
         # Clear diff when input changes
         self._input_buffer.connect("changed", self._on_input_changed)
