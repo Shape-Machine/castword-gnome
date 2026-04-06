@@ -78,7 +78,7 @@
     <key name="stt-enabled" type="b">
       <default>false</default>
       <summary>Enable speech-to-text features</summary>
-      <description>Master switch for STT; shows the Speech preferences page and mic button.</description>
+      <description>When true, the mic button is shown in the overlay window. The Speech preferences page is always visible.</description>
     </key>
 
     <key name="active-stt-provider" type="s">

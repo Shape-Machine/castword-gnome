@@ -68,7 +68,9 @@ def make_stt_provider(settings) -> BaseSpeechProvider:
     name = settings.get_string("active-stt-provider")
 
     if name == "whisper":
-        key = lookup_secret("whisper") or ""
+        key = lookup_secret("openai") or ""
+        if not key:
+            raise ProviderError("No OpenAI API key found. Add it in Preferences → Providers.")
         return WhisperProvider(api_key=key, model=settings.get_string("whisper-model"))
 
     if name == "whisper-local":
@@ -78,6 +80,8 @@ def make_stt_provider(settings) -> BaseSpeechProvider:
 
     if name == "assemblyai":
         key = lookup_secret("assemblyai") or ""
+        if not key:
+            raise ProviderError("No AssemblyAI API key found. Add it in Preferences → Speech.")
         return AssemblyAIProvider(api_key=key)
 
     raise ProviderError(f"Unknown STT provider: {name!r}")

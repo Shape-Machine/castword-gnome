@@ -8,9 +8,8 @@ class WhisperLocalProvider(BaseSpeechProvider):
     file in Phase 2.
     """
 
-    def __init__(self, model_path: str, model: str = "base"):
+    def __init__(self, model_path: str):
         self._model_path = model_path
-        self._model = model
 
     async def transcribe(self, audio_bytes: bytes) -> str:
         raise NotImplementedError("Local Whisper transcription not yet implemented (Phase 2)")

@@ -121,6 +121,7 @@ class CastwordWindow(Adw.Window):
         mic_btn.set_sensitive(False)
         mic_btn.set_tooltip_text("Speech input — coming in Phase 2")
         mic_btn.set_margin_start(4)
+        self._settings.bind("stt-enabled", mic_btn, "visible", Gio.SettingsBindFlags.DEFAULT)
         tone_row.append(mic_btn)
 
         self._tone_buttons: list[Gtk.Button] = []
