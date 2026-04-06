@@ -40,8 +40,8 @@ def _scan_whisper_models() -> list[str]:
 _PROVIDERS = ["openai", "anthropic", "gemini", "ollama"]
 _PROVIDER_LABELS = ["OpenAI", "Anthropic", "Google Gemini", "Ollama"]
 
-_STT_PROVIDERS = ["whisper", "whisper-local", "assemblyai"]
-_STT_PROVIDER_LABELS = ["OpenAI Whisper", "Local Whisper (whisper.cpp)", "AssemblyAI"]
+_STT_PROVIDERS = ["whisper", "whisper-local"]
+_STT_PROVIDER_LABELS = ["OpenAI Whisper", "Local Whisper (whisper.cpp)"]
 
 
 class CastwordPreferences(Adw.PreferencesWindow):
@@ -547,18 +547,6 @@ class CastwordPreferences(Adw.PreferencesWindow):
 
         page.add(whisper_local_group)
 
-        # AssemblyAI settings
-        assemblyai_group = Adw.PreferencesGroup(title="AssemblyAI Settings")
-
-        assemblyai_key = Adw.PasswordEntryRow(title="AssemblyAI API Key")
-        self._prefill_key("assemblyai", assemblyai_key)
-        assemblyai_key.connect("apply", self._on_key_changed, "assemblyai")
-        ak_focus = Gtk.EventControllerFocus()
-        ak_focus.connect("leave", lambda _c, e=assemblyai_key: self._on_key_changed(e, "assemblyai"))
-        assemblyai_key.add_controller(ak_focus)
-        assemblyai_group.add(assemblyai_key)
-        page.add(assemblyai_group)
-
         # Test connection (stub — disabled until Phase 2 implementation)
         test_group = Adw.PreferencesGroup()
         test_row = Adw.ActionRow(
@@ -573,7 +561,6 @@ class CastwordPreferences(Adw.PreferencesWindow):
         self._stt_groups = {
             "whisper": whisper_group,
             "whisper-local": whisper_local_group,
-            "assemblyai": assemblyai_group,
         }
         self._update_stt_visibility(active_stt)
         return page

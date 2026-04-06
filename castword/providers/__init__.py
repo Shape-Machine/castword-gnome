@@ -12,7 +12,6 @@ from castword.providers.ollama_provider import OllamaProvider
 from castword.providers.stt_base import BaseSpeechProvider
 from castword.providers.whisper_provider import WhisperProvider
 from castword.providers.whisper_local_provider import WhisperLocalProvider
-from castword.providers.assemblyai_provider import AssemblyAIProvider
 
 
 def make_provider(settings, provider_id: str | None = None) -> BaseProvider:
@@ -88,12 +87,6 @@ def make_stt_provider(settings) -> BaseSpeechProvider:
             raise ProviderError("No local model path configured. Set it in Preferences → Speech.")
         binary_path = settings.get_string("whisper-local-binary-path")
         return WhisperLocalProvider(model_path=model_path, binary_path=binary_path)
-
-    if name == "assemblyai":
-        key = lookup_secret("assemblyai") or ""
-        if not key:
-            raise ProviderError("No AssemblyAI API key found. Add it in Preferences → Speech.")
-        return AssemblyAIProvider(api_key=key)
 
     raise ProviderError(f"Unknown STT provider: {name!r}")
 
