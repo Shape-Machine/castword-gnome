@@ -1,26 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#9141ac"/>
-      <stop offset="100%" stop-color="#3584e4"/>
-    </linearGradient>
-  </defs>
 
-  <!-- Background plate -->
-  <rect width="128" height="128" rx="28" ry="28" fill="url(#bg)"/>
+  <!-- Frog body -->
+  <circle cx="60" cy="80" r="40" fill="#5cb832" stroke="#1a1a1a" stroke-width="3.5"/>
 
-  <!-- Speech bubble -->
-  <path d="M 29,18 H 99 A 13,13 0 0 1 112,31 V 61 A 13,13 0 0 1 99,74
-           H 46 L 22,92 L 38,74 H 29 A 13,13 0 0 1 16,61 V 31
-           A 13,13 0 0 1 29,18 Z"
-        fill="white"/>
+  <!-- Left eye bump -->
+  <circle cx="42" cy="47" r="13" fill="#5cb832" stroke="#1a1a1a" stroke-width="3"/>
+  <circle cx="42" cy="47" r="8" fill="white"/>
+  <circle cx="44" cy="48" r="4" fill="#1a1a1a"/>
 
-  <!-- "cast" label -->
-  <text x="64" y="46"
-        text-anchor="middle"
-        dominant-baseline="central"
-        font-family="Cantarell, sans-serif"
-        font-weight="bold"
-        font-size="30"
-        fill="#613583">cast</text>
+  <!-- Right eye bump -->
+  <circle cx="74" cy="47" r="13" fill="#5cb832" stroke="#1a1a1a" stroke-width="3"/>
+  <circle cx="74" cy="47" r="8" fill="white"/>
+  <circle cx="76" cy="48" r="4" fill="#1a1a1a"/>
+
+  <!-- Open mouth (mid-croak) -->
+  <path d="M 36,79 Q 60,69 84,79 Q 78,100 60,101 Q 42,100 36,79 Z"
+        fill="#c0392b" stroke="#1a1a1a" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Upper lip crease -->
+  <path d="M 36,79 Q 60,73 84,79"
+        fill="none" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Sound waves -->
+  <path d="M 90,73 Q 97,81 90,89"
+        fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M 98,67 Q 108,81 98,95"
+        fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M 107,62 Q 120,81 107,100"
+        fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+
 </svg>
