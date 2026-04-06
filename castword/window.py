@@ -276,7 +276,6 @@ class CastwordWindow(Adw.Window):
     def _on_preferences_closed(self, prefs):
         self._prefs_open = False
         self._rebuild_tone_buttons()
-        self._maybe_start_recorder()
         return False
 
     def _prompt_shortcut_setup(self):
@@ -285,7 +284,6 @@ class CastwordWindow(Adw.Window):
         _, binding = find_castword_shortcut()
         if binding is not None:
             self._prefs_open = False  # no dialog needed, unblock focus-out dismiss
-            self._maybe_start_recorder()
             return GLib.SOURCE_REMOVE  # already configured
 
         self._prefs_open = True
@@ -304,7 +302,6 @@ class CastwordWindow(Adw.Window):
     def _on_shortcut_prompt_response(self, dialog, response):
         self._prefs_open = False
         if response != "setup":
-            self._maybe_start_recorder()
             return
         from castword.shortcuts import find_conflicting_shortcut, format_binding, DEFAULT_BINDING
         conflict_path, conflict_name = find_conflicting_shortcut(DEFAULT_BINDING)
@@ -312,7 +309,6 @@ class CastwordWindow(Adw.Window):
             self._show_shortcut_conflict_dialog(conflict_path, conflict_name, format_binding(DEFAULT_BINDING))
         else:
             self._do_register_shortcut()
-            self._maybe_start_recorder()
 
     def _show_shortcut_conflict_dialog(self, conflict_path: str, conflict_name: str, binding_label: str):
         self._prefs_open = True
@@ -328,7 +324,6 @@ class CastwordWindow(Adw.Window):
 
     def _on_conflict_response(self, dialog, response, conflict_path: str):
         self._prefs_open = False
-        self._maybe_start_recorder()
         if response != "replace":
             return
         from castword.shortcuts import clear_shortcut_binding
