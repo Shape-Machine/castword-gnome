@@ -26,7 +26,7 @@ class AudioRecorder:
 
     SILENCE_THRESHOLD_DB = -40.0   # RMS below this = silence (dBFS)
     SPEECH_THRESHOLD_DB  = -35.0   # RMS must exceed this to count as real speech
-    SPEECH_MIN_FRAMES    = 3       # consecutive frames above SPEECH_THRESHOLD_DB required
+    SPEECH_MIN_FRAMES    = 3       # consecutive frames above SPEECH_THRESHOLD_DB required (~300ms at 100ms level interval)
     SILENCE_DURATION_S   = 1.5     # seconds of silence before emitting a chunk
     MAX_CHUNK_DURATION_S = 30.0    # safety flush regardless of silence
     IDLE_TIMEOUT_S       = 5.0     # auto-stop after this many seconds without real speech

@@ -21,6 +21,7 @@ class CastwordWindow(Adw.ApplicationWindow):
         self.set_resizable(False)
 
         self._settings = Gio.Settings(schema_id="xyz.shapemachine.castword-gnome")
+        self._migrate_settings()
         self._busy: bool = False
         self._prefs_open: bool = False
         self._transcribing_count: int = 0
@@ -49,6 +50,12 @@ class CastwordWindow(Adw.ApplicationWindow):
         if not self._settings.get_boolean("shortcut-prompted"):
             self._prefs_open = True  # block focus-out dismiss while prompt is pending
             GLib.idle_add(self._prompt_shortcut_setup)
+
+    def _migrate_settings(self) -> None:
+        """Reset any settings that reference removed features."""
+        from castword.preferences import _STT_PROVIDERS
+        if self._settings.get_string("active-stt-provider") not in _STT_PROVIDERS:
+            self._settings.reset("active-stt-provider")
 
     # ------------------------------------------------------------------ #
     # UI construction
@@ -240,7 +247,7 @@ class CastwordWindow(Adw.ApplicationWindow):
         focus_ctrl.connect("leave", self._on_focus_out)
         self.add_controller(focus_ctrl)
 
-        # App-level actions for menu items (Adw.Window is not a Gio.ActionMap)
+        # App-level actions so the menu model's "app." prefix resolves correctly
         app = self.get_application()
         prefs_action = Gio.SimpleAction.new("preferences", None)
         prefs_action.connect("activate", self._on_open_preferences)

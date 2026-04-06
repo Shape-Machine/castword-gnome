@@ -450,7 +450,10 @@ class CastwordPreferences(Adw.PreferencesWindow):
             entry.set_text("")
             # Brief visual feedback via the entry's error state
             entry.add_css_class("error")
-            GLib.timeout_add(1500, lambda: (entry.remove_css_class("error"), GLib.SOURCE_REMOVE)[1])
+            def _clear_error(e=entry):
+                e.remove_css_class("error")
+                return GLib.SOURCE_REMOVE
+            GLib.timeout_add(1500, _clear_error)
 
     def _on_open_keyboard_settings(self, btn):
         import subprocess
@@ -513,8 +516,13 @@ class CastwordPreferences(Adw.PreferencesWindow):
 
         # Binary path — with auto-detect button
         saved_binary = self._settings.get_string("whisper-local-binary-path")
+        if not saved_binary:
+            detected = _detect_whisper_binary() or ""
+            if detected:
+                self._settings.set_string("whisper-local-binary-path", detected)
+            saved_binary = detected
         binary_path_entry = Adw.EntryRow(title="Binary path")
-        binary_path_entry.set_text(saved_binary or _detect_whisper_binary() or "")
+        binary_path_entry.set_text(saved_binary)
         binary_path_entry.connect("changed", lambda r: self._settings.set_string("whisper-local-binary-path", r.get_text()))
 
         detect_btn = Gtk.Button(icon_name="edit-find-symbolic", valign=Gtk.Align.CENTER)
