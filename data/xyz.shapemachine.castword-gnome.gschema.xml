@@ -97,5 +97,11 @@
       <summary>Path to local whisper.cpp model file (.bin)</summary>
     </key>
 
+    <key name="whisper-local-binary-path" type="s">
+      <default>""</default>
+      <summary>Path to the whisper.cpp binary</summary>
+      <description>Full path to the whisper.cpp executable (e.g. /usr/bin/whisper-cpp). Defaults to "whisper" (looked up in PATH) if empty.</description>
+    </key>
+
   </schema>
 </schemalist>

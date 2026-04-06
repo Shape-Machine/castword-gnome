@@ -7,6 +7,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, GLib, Gio, Gtk
 
+from castword.audio import AudioRecorder
 from castword.diff import word_diff
 from castword.tones import tones_from_settings
 
@@ -26,6 +27,13 @@ class CastwordWindow(Adw.Window):
 
         self._build_ui()
         self._connect_signals()
+
+        self._recorder = AudioRecorder(
+            on_chunk=self._on_audio_chunk,
+            on_error=self._show_banner,
+        )
+        self.connect("show", self._on_window_shown)
+        self.connect("hide", self._on_window_hidden)
 
         if not self._settings.get_boolean("shortcut-prompted"):
             self._prefs_open = True  # block focus-out dismiss while prompt is pending
@@ -110,13 +118,13 @@ class CastwordWindow(Adw.Window):
         tone_scroll.set_child(self._tone_box)
         tone_row.append(tone_scroll)
 
-        mic_btn = Gtk.Button(icon_name="audio-input-microphone-symbolic")
-        mic_btn.add_css_class("flat")
-        mic_btn.set_sensitive(False)
-        mic_btn.set_tooltip_text("Speech input — coming in Phase 2")
-        mic_btn.set_margin_start(4)
-        self._settings.bind("stt-enabled", mic_btn, "visible", Gio.SettingsBindFlags.DEFAULT)
-        tone_row.append(mic_btn)
+        self._mic_btn = Gtk.Button(icon_name="audio-input-microphone-symbolic")
+        self._mic_btn.add_css_class("flat")
+        self._mic_btn.set_tooltip_text("Toggle speech input")
+        self._mic_btn.set_margin_start(4)
+        self._settings.bind("stt-enabled", self._mic_btn, "visible", Gio.SettingsBindFlags.DEFAULT)
+        self._mic_btn.connect("clicked", self._on_mic_clicked)
+        tone_row.append(self._mic_btn)
 
         self._tone_buttons: list[Gtk.Button] = []
         self._rebuild_tone_buttons()
@@ -308,12 +316,6 @@ class CastwordWindow(Adw.Window):
         if not text:
             return
 
-        # STT INTEGRATION POINT (Phase 2) — mic button will call this pattern:
-        #   1. Record audio via GStreamer pipeline
-        #   2. provider = make_stt_provider(self._settings)
-        #   3. text = await provider.transcribe(audio_bytes)
-        #   4. Populate _input_view buffer, then trigger rewrite
-
         # Build the provider on the main thread — GSettings and libsecret
         # reads must not happen from a background thread.
         try:
@@ -370,6 +372,78 @@ class CastwordWindow(Adw.Window):
 
     def _on_rewrite_error(self, message: str):
         self._set_busy(False)
+        self._show_banner(message)
+        return GLib.SOURCE_REMOVE
+
+    # ------------------------------------------------------------------ #
+    # STT recording — window show/hide lifecycle
+    # ------------------------------------------------------------------ #
+
+    def _on_window_shown(self, _window) -> None:
+        if self._settings.get_boolean("stt-enabled") and not self._recorder.is_running():
+            self._recorder.start()
+            self._set_mic_recording(True)
+
+    def _on_window_hidden(self, _window) -> None:
+        if self._recorder.is_running():
+            self._recorder.stop()
+            self._set_mic_recording(False)
+
+    def _on_mic_clicked(self, _btn) -> None:
+        if self._recorder.is_running():
+            self._recorder.stop()
+            self._set_mic_recording(False)
+        else:
+            self._recorder.start()
+            self._set_mic_recording(True)
+
+    def _set_mic_recording(self, recording: bool) -> None:
+        if recording:
+            self._mic_btn.set_icon_name("media-record-symbolic")
+            self._mic_btn.add_css_class("accent")
+        else:
+            self._mic_btn.set_icon_name("audio-input-microphone-symbolic")
+            self._mic_btn.remove_css_class("accent")
+
+    # ------------------------------------------------------------------ #
+    # STT transcription — audio chunk → text
+    # ------------------------------------------------------------------ #
+
+    def _on_audio_chunk(self, wav_bytes: bytes) -> None:
+        """Called on GTK main thread when AudioRecorder emits a speech chunk."""
+        try:
+            from castword.providers import make_stt_provider
+            provider = make_stt_provider(self._settings)
+        except Exception as exc:
+            self._show_banner(str(exc))
+            return
+
+        threading.Thread(
+            target=self._transcribe_thread,
+            args=(wav_bytes, provider),
+            daemon=True,
+        ).start()
+
+    def _transcribe_thread(self, wav_bytes: bytes, provider) -> None:
+        try:
+            text = asyncio.run(provider.transcribe(wav_bytes))
+            if text.strip():
+                GLib.idle_add(self._on_transcription_done, text)
+        except Exception as exc:
+            GLib.idle_add(self._on_transcription_error, str(exc))
+
+    def _on_transcription_done(self, text: str):
+        buf = self._input_buffer
+        existing = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
+        sep = " " if existing.strip() else ""
+        buf.insert(buf.get_end_iter(), sep + text.strip())
+
+        # Auto-copy the full accumulated text
+        full_text = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
+        self._copy_to_clipboard(full_text)
+        return GLib.SOURCE_REMOVE
+
+    def _on_transcription_error(self, message: str):
         self._show_banner(message)
         return GLib.SOURCE_REMOVE
 
