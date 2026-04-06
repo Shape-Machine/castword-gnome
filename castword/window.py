@@ -269,7 +269,9 @@ class CastwordWindow(Adw.Window):
 
     def _on_open_about(self, *_):
         from castword.about import show_about
-        show_about(self)
+        self._prefs_open = True
+        dialog = show_about(self)
+        dialog.connect("closed", lambda _: setattr(self, "_prefs_open", False))
 
     def _on_preferences_closed(self, prefs):
         self._prefs_open = False

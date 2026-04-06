@@ -7,7 +7,7 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import Adw, Gtk
 
 
-def show_about(parent) -> None:
+def show_about(parent) -> Adw.AboutDialog:
     try:
         version = importlib.metadata.version("castword-gnome")
     except importlib.metadata.PackageNotFoundError:
@@ -25,3 +25,4 @@ def show_about(parent) -> None:
         developers=["Sri Rang"],
     )
     dialog.present(parent)
+    return dialog
