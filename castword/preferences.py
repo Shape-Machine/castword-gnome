@@ -515,8 +515,10 @@ class CastwordPreferences(Adw.PreferencesWindow):
         whisper_local_group = Adw.PreferencesGroup(title="Local Whisper Settings")
 
         # Binary path — with auto-detect button
+        # Only auto-detect when the key has never been explicitly set (user_value is None).
+        # If the user cleared the field (set to ""), respect that choice.
         saved_binary = self._settings.get_string("whisper-local-binary-path")
-        if not saved_binary:
+        if self._settings.get_user_value("whisper-local-binary-path") is None and not saved_binary:
             detected = _detect_whisper_binary() or ""
             if detected:
                 self._settings.set_string("whisper-local-binary-path", detected)
