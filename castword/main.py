@@ -22,7 +22,11 @@ class CastwordApplication(Adw.Application):
             # Keep the process resident after the window is hidden so
             # D-Bus re-activation can re-present it instantly.
             self.hold()
-        self._window.present()
+
+        if self._window.get_visible():
+            self._window.toggle_mic()
+        else:
+            self._window.present()
 
 
 def main():
