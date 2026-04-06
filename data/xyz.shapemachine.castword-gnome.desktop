@@ -8,6 +8,6 @@ Terminal=false
 Type=Application
 Categories=GNOME;GTK;Utility;
 Keywords=text;rewrite;tone;AI;LLM;writing;clipboard;
-StartupNotify=false
+StartupNotify=true
 StartupWMClass=castword
 DBusActivatable=true

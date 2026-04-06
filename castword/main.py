@@ -31,7 +31,7 @@ class CastwordApplication(Adw.Application):
 
 def main():
     # Must be called before any GLib/GTK initialisation.
-    GLib.set_prgname("xyz.shapemachine.castword-gnome")
+    GLib.set_prgname("castword")
     GLib.set_application_name("Castword")
     app = CastwordApplication()
     return app.run(sys.argv)

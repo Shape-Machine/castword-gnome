@@ -66,11 +66,13 @@ class CastwordWindow(Adw.Window):
         header_bar = Adw.HeaderBar()
         header_bar.add_css_class("flat")
 
-        gear_btn = Gtk.Button(icon_name="preferences-system-symbolic")
-        gear_btn.add_css_class("flat")
-        gear_btn.set_tooltip_text("Preferences")
-        gear_btn.connect("clicked", self._on_open_preferences)
-        header_bar.pack_end(gear_btn)
+        menu = Gio.Menu()
+        menu.append("Preferences", "win.preferences")
+        menu.append("About Castword", "win.about")
+
+        menu_btn = Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu)
+        menu_btn.add_css_class("flat")
+        header_bar.pack_end(menu_btn)
 
         toolbar_view.add_top_bar(header_bar)
 
@@ -238,6 +240,15 @@ class CastwordWindow(Adw.Window):
         focus_ctrl.connect("leave", self._on_focus_out)
         self.add_controller(focus_ctrl)
 
+        # Window actions for menu items
+        prefs_action = Gio.SimpleAction.new("preferences", None)
+        prefs_action.connect("activate", self._on_open_preferences)
+        self.add_action(prefs_action)
+
+        about_action = Gio.SimpleAction.new("about", None)
+        about_action.connect("activate", self._on_open_about)
+        self.add_action(about_action)
+
         # Clear diff when input changes
         self._input_buffer.connect("changed", self._on_input_changed)
 
@@ -248,12 +259,16 @@ class CastwordWindow(Adw.Window):
     # Preferences
     # ------------------------------------------------------------------ #
 
-    def _on_open_preferences(self, btn):
+    def _on_open_preferences(self, *_):
         from castword.preferences import CastwordPreferences
         self._prefs_open = True
         prefs = CastwordPreferences(transient_for=self, modal=False)
         prefs.connect("close-request", self._on_preferences_closed)
         prefs.present()
+
+    def _on_open_about(self, *_):
+        from castword.about import show_about
+        show_about(self)
 
     def _on_preferences_closed(self, prefs):
         self._prefs_open = False
