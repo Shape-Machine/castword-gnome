@@ -12,9 +12,11 @@ class CastwordApplication(Adw.Application):
             application_id="xyz.shapemachine.castword-gnome",
             flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
         )
+        self.set_resource_base_path("/xyz/shapemachine/castword-gnome")
+        self.connect("activate", self._on_activate)
         self._window = None
 
-    def do_activate(self):
+    def _on_activate(self, app):
         from castword.window import CastwordWindow
 
         if self._window is None:
