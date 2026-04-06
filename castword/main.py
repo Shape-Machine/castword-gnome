@@ -8,12 +8,9 @@ from gi.repository import Adw, Gio
 
 class CastwordApplication(Adw.Application):
     def __init__(self):
-        super().__init__(
-            application_id="xyz.shapemachine.castword-gnome",
-            flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
-        )
-        self.set_resource_base_path("/xyz/shapemachine/castword-gnome")
+        super().__init__(application_id="xyz.shapemachine.castword-gnome")
         self.connect("activate", self._on_activate)
+        self.set_resource_base_path("/xyz/shapemachine/castword-gnome")
         self._window = None
 
     def _on_activate(self, app):
