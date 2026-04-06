@@ -84,7 +84,7 @@
     <key name="active-stt-provider" type="s">
       <default>"whisper"</default>
       <summary>Active STT provider</summary>
-      <description>One of: whisper, whisper-local, assemblyai</description>
+      <description>One of: whisper, whisper-local</description>
     </key>
 
     <key name="whisper-model" type="s">
