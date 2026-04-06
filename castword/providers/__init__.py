@@ -65,6 +65,15 @@ def make_stt_provider(settings) -> BaseSpeechProvider:
     Returns a stub provider (all raise NotImplementedError in Phase 2).
     Raises ProviderError if the provider ID is unknown or misconfigured.
     """
+    try:
+        from gi.repository import Secret  # noqa: F401
+    except (ImportError, ValueError):
+        raise ProviderError(
+            "libsecret is not installed. Install it with:\n"
+            "  Arch: sudo pacman -S libsecret\n"
+            "  Debian/Ubuntu: sudo apt install libsecret-1-0 gir1.2-secret-1"
+        )
+
     name = settings.get_string("active-stt-provider")
 
     if name == "whisper":
@@ -74,9 +83,10 @@ def make_stt_provider(settings) -> BaseSpeechProvider:
         return WhisperProvider(api_key=key, model=settings.get_string("whisper-model"))
 
     if name == "whisper-local":
-        return WhisperLocalProvider(
-            model_path=settings.get_string("whisper-local-model-path")
-        )
+        model_path = settings.get_string("whisper-local-model-path")
+        if not model_path:
+            raise ProviderError("No local model path configured. Set it in Preferences → Speech.")
+        return WhisperLocalProvider(model_path=model_path)
 
     if name == "assemblyai":
         key = lookup_secret("assemblyai") or ""

@@ -110,12 +110,6 @@ class CastwordWindow(Adw.Window):
         tone_scroll.set_child(self._tone_box)
         tone_row.append(tone_scroll)
 
-        # STT INTEGRATION POINT (Phase 2):
-        # When mic button is clicked:
-        #   1. Record audio via GStreamer pipeline
-        #   2. provider = make_stt_provider(self._settings)
-        #   3. text = await provider.transcribe(audio_bytes)
-        #   4. Populate _input_view buffer with transcribed text
         mic_btn = Gtk.Button(icon_name="audio-input-microphone-symbolic")
         mic_btn.add_css_class("flat")
         mic_btn.set_sensitive(False)
@@ -313,6 +307,12 @@ class CastwordWindow(Adw.Window):
         text = self._input_buffer.get_text(start, end, False).strip()
         if not text:
             return
+
+        # STT INTEGRATION POINT (Phase 2) — mic button will call this pattern:
+        #   1. Record audio via GStreamer pipeline
+        #   2. provider = make_stt_provider(self._settings)
+        #   3. text = await provider.transcribe(audio_bytes)
+        #   4. Populate _input_view buffer, then trigger rewrite
 
         # Build the provider on the main thread — GSettings and libsecret
         # reads must not happen from a background thread.
