@@ -6,7 +6,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-GENERATOR_URL="https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/master/pip/flatpak-pip-generator.py"
+# Pinned to a specific commit to avoid floating-ref supply-chain risk.
+# To update: check https://github.com/flatpak/flatpak-builder-tools/commits/master/pip/flatpak-pip-generator.py
+# and update the commit SHA below.
+GENERATOR_COMMIT="216a52efa4fcaaf6612147ffe53d9b70c97addfc"
+GENERATOR_URL="https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/${GENERATOR_COMMIT}/pip/flatpak-pip-generator.py"
 GENERATOR=/tmp/flatpak-pip-generator.py
 VENV=/tmp/fpg-env
 

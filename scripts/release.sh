@@ -40,6 +40,12 @@ ok()   { echo "✓ $*"; }
 skip() { echo "– $* (skipped)"; }
 err()  { echo "✗ $*" >&2; }
 
+cleanup() {
+    [[ -n "${FLATPAK_BUILD:-}" ]] && rm -rf "$FLATPAK_BUILD"
+    [[ -n "${AUR_TMP:-}" ]]       && rm -rf "$AUR_TMP"
+}
+trap cleanup EXIT
+
 # ── Check tools ───────────────────────────────────────────────────────────────
 
 check() {
@@ -124,7 +130,6 @@ if [[ $DO_FLATPAK == 1 ]]; then
     FLATPAK_REPO="$ROOT/_flatpak_repo"
     FLATPAK_BUILD="$ROOT/_flatpak_build"
     rm -rf "$FLATPAK_BUILD"
-    trap 'rm -rf "$FLATPAK_BUILD"' EXIT
 
     flatpak-builder \
         --force-clean \
@@ -234,6 +239,7 @@ if [[ $DO_RPM == 1 ]]; then
         --depends "gtk4" \
         --depends "libadwaita" \
         --depends "libsecret" \
+        --after-install "$ROOT/packaging/debian/postinst" \
         --package "$DIST/castword-gnome-$VERSION.rpm" \
         -C "$STAGING" \
         usr
@@ -260,6 +266,7 @@ if [[ $DO_PACMAN == 1 ]]; then
         --depends "gtk4" \
         --depends "libadwaita" \
         --depends "libsecret" \
+        --after-install "$ROOT/packaging/debian/postinst" \
         --package "$DIST/castword-gnome-$VERSION-any.pkg.tar.zst" \
         -C "$STAGING" \
         usr
@@ -283,7 +290,6 @@ if [[ $DO_AUR == 1 ]]; then
     PKGVER="${VERSION//-/.}"
 
     AUR_TMP=$(mktemp -d)
-    trap 'rm -rf "$AUR_TMP"' EXIT
 
     log "Cloning AUR repo (castword-gnome-bin)"
     git clone ssh://aur@aur.archlinux.org/castword-gnome-bin.git "$AUR_TMP"
@@ -312,6 +318,11 @@ if [[ $DO_GITHUB == 1 ]]; then
     for f in "$DIST"/*; do
         [[ -f "$f" ]] && ASSETS+=("$f")
     done
+
+    if (( ${#ASSETS[@]} == 0 )); then
+        err "No artifacts found in $DIST — build packages first (make deb/rpm/appimage/flatpak)"
+        exit 1
+    fi
 
     if git rev-parse "v$VERSION" >/dev/null 2>&1; then
         PREV_TAG=$(git describe --tags --abbrev=0 "v$VERSION^" 2>/dev/null || echo "")

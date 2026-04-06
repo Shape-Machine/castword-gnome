@@ -25,7 +25,7 @@ VERSION ?=
 .PHONY: run install uninstall install-service install-desktop install-icons uninstall-icons \
         install-metainfo uninstall-metainfo install-schema uninstall-schema \
         compile-schema clean release release-deps \
-        deb rpm appimage flatpak gh-release
+        tarball deb rpm appimage flatpak gh-release
 
 run: $(STAMP) compile-schema
 	pkill -f 'castword[.]main' 2>/dev/null || true
@@ -138,6 +138,8 @@ release-deps:
 	sudo pacman -S --needed flatpak-builder github-cli ruby
 	sudo gem install fpm
 	@mkdir -p $(HOME)/bin
+	# NOTE: appimagetool has no versioned releases upstream — 'continuous' is the only channel.
+	# Verify the binary after download if supply-chain integrity is a concern.
 	curl -L -o $(HOME)/bin/appimagetool \
 	    https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
 	chmod +x $(HOME)/bin/appimagetool
@@ -145,10 +147,14 @@ release-deps:
 	@echo "Make sure ~/bin is in your PATH (add to ~/.config/fish/config.fish):"
 	@echo "  fish_add_path ~/bin"
 
-# Bump version, commit, tag, push, then build and publish all artifacts.
+# Bump version, build all artifacts locally, then push and publish.
+# Order: validate → bump → commit → tag → build → push → publish
+# This ensures no remote state is modified until artifacts are confirmed good.
 # Usage: make release VERSION=2026-04-03-00
 release:
 	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make release VERSION=2026-04-03-00)" && exit 1)
+	@echo "$(VERSION)" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}$$' || \
+	    (echo "ERROR: VERSION must match format yyyy-mm-dd-NN (e.g. 2026-04-03-00)" && exit 1)
 	@git rev-parse --abbrev-ref HEAD | grep -q '^main$$' || \
 	    (echo "ERROR: make release must be run from the main branch" && exit 1)
 	@echo "==> Bumping version to $(VERSION)"
@@ -159,18 +165,29 @@ release:
 	    "$$(date -R)" > $$TMPFILE; \
 	cat packaging/debian/changelog >> $$TMPFILE; \
 	mv $$TMPFILE packaging/debian/changelog
-	@echo "==> Committing and tagging v$(VERSION)"
+	@echo "==> Committing and tagging v$(VERSION) locally"
 	git add pyproject.toml packaging/debian/changelog
 	git commit -m "chore: release v$(VERSION)"
 	git tag "v$(VERSION)"
+	@echo "==> Building all artifacts locally (no remote changes yet)"
+	PATH="$(HOME)/bin:$(PATH)" ./scripts/release.sh $(VERSION) --skip-github --skip-aur
+	@echo "==> Build succeeded — pushing to remote"
 	git push origin main "v$(VERSION)" || \
-	    (echo "ERROR: push failed. To retry: git tag -d v$(VERSION) && git reset HEAD~1 and re-run" && exit 1)
-	@echo "==> Building and publishing"
-	PATH="$(HOME)/bin:$(PATH)" ./scripts/release.sh $(VERSION)
+	    (echo "ERROR: push failed. To retry after fixing: git push origin main v$(VERSION)" && exit 1)
+	@echo "==> Publishing GitHub release and AUR"
+	PATH="$(HOME)/bin:$(PATH)" ./scripts/release.sh $(VERSION) \
+	    --skip-flatpak --skip-appimage --skip-deb --skip-rpm --skip-pacman
 
 # ─── Individual format targets ────────────────────────────────────────────────
 # Build a single package format without cutting a full release.
 # Usage: make deb VERSION=2026-04-03-00
+
+tarball:
+	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make tarball VERSION=2026-04-03-00)" && exit 1)
+	mkdir -p dist/$(VERSION)
+	git archive --prefix=castword-gnome-$(VERSION)/ HEAD \
+	    | gzip > dist/$(VERSION)/castword-gnome-$(VERSION).tar.gz
+	@echo "✓ Tarball → dist/$(VERSION)/castword-gnome-$(VERSION).tar.gz"
 
 deb:
 	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make deb VERSION=2026-04-03-00)" && exit 1)
