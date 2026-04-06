@@ -12,6 +12,10 @@ if [[ -z "$VERSION" ]]; then
     echo "Usage: $0 <version> [--skip-flatpak] [--skip-appimage] [--skip-deb] [--skip-rpm] [--skip-pacman] [--skip-aur] [--skip-github]"
     exit 1
 fi
+if ! [[ "$VERSION" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]]; then
+    echo "ERROR: VERSION must match format yyyy-mm-dd-NN (e.g. 2026-04-06-00)"
+    exit 1
+fi
 shift
 
 DO_FLATPAK=1 DO_APPIMAGE=1 DO_DEB=1 DO_RPM=1 DO_PACMAN=1 DO_AUR=1 DO_GITHUB=1
@@ -34,11 +38,12 @@ mkdir -p "$DIST"
 log()  { echo "▶ $*"; }
 ok()   { echo "✓ $*"; }
 skip() { echo "– $* (skipped)"; }
+err()  { echo "✗ $*" >&2; }
 
 # ── Check tools ───────────────────────────────────────────────────────────────
 
 check() {
-    command -v "$1" &>/dev/null || { echo "✗ missing: $1 — $2"; exit 1; }
+    command -v "$1" &>/dev/null || { err "missing: $1 — $2"; exit 1; }
 }
 
 check uv "sudo pacman -S uv"
@@ -50,6 +55,18 @@ check uv "sudo pacman -S uv"
 [[ $DO_AUR      == 1 ]] && check makepkg         "install base-devel"
 [[ $DO_AUR      == 1 ]] && check git             "sudo pacman -S git"
 [[ $DO_GITHUB   == 1 ]] && check gh              "sudo pacman -S github-cli"
+
+# ── Pre-flight: verify required source files exist ────────────────────────────
+
+for f in \
+    "$ROOT/castword" \
+    "$ROOT/data/icons/hicolor/scalable/apps/$APP_ID.svg" \
+    "$ROOT/data/$APP_ID.desktop" \
+    "$ROOT/data/$APP_ID.gschema.xml" \
+    "$ROOT/data/$APP_ID.metainfo.xml" \
+    "$ROOT/data/$APP_ID.service"; do
+    [[ -e "$f" ]] || { err "Missing required file: $f"; exit 1; }
+done
 
 # ── 1. Stage install tree ─────────────────────────────────────────────────────
 
@@ -102,10 +119,12 @@ ok "Staging complete → $STAGING"
 # ── 2. Flatpak ────────────────────────────────────────────────────────────────
 
 if [[ $DO_FLATPAK == 1 ]]; then
+    log "Reminder: if pyproject.toml deps changed, regenerate castword-pip-deps.yaml first (scripts/update-flatpak-deps.sh)"
     log "Building Flatpak"
     FLATPAK_REPO="$ROOT/_flatpak_repo"
     FLATPAK_BUILD="$ROOT/_flatpak_build"
     rm -rf "$FLATPAK_BUILD"
+    trap 'rm -rf "$FLATPAK_BUILD"' EXIT
 
     flatpak-builder \
         --force-clean \
@@ -256,7 +275,7 @@ if [[ $DO_AUR == 1 ]]; then
 
     PKG_FILE="$DIST/castword-gnome-$VERSION-any.pkg.tar.zst"
     if [[ ! -f "$PKG_FILE" ]]; then
-        echo "✗ AUR publish requires the Arch package — re-run without --skip-pacman"
+        err "AUR publish requires the Arch package — re-run without --skip-pacman"
         exit 1
     fi
 
@@ -269,7 +288,7 @@ if [[ $DO_AUR == 1 ]]; then
     log "Cloning AUR repo (castword-gnome-bin)"
     git clone ssh://aur@aur.archlinux.org/castword-gnome-bin.git "$AUR_TMP"
 
-    sed "s/@VERSION@/$VERSION/g; s/@PKGVER@/$PKGVER/g; s/@SHA256SUM@/$SHA256/g" \
+    sed "s|@VERSION@|$VERSION|g; s|@PKGVER@|$PKGVER|g; s|@SHA256SUM@|$SHA256|g" \
         "$ROOT/packaging/aur/PKGBUILD" > "$AUR_TMP/PKGBUILD"
 
     cp "$ROOT/packaging/aur/castword-gnome-bin.install" "$AUR_TMP/castword-gnome-bin.install"
@@ -294,11 +313,15 @@ if [[ $DO_GITHUB == 1 ]]; then
         [[ -f "$f" ]] && ASSETS+=("$f")
     done
 
-    PREV_TAG=$(git describe --tags --abbrev=0 "v$VERSION^" 2>/dev/null || echo "")
-    if [[ -n "$PREV_TAG" ]]; then
-        NOTES=$(git log "$PREV_TAG..v$VERSION" --pretty=format:"- %s" --no-merges)
+    if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+        PREV_TAG=$(git describe --tags --abbrev=0 "v$VERSION^" 2>/dev/null || echo "")
+        if [[ -n "$PREV_TAG" ]]; then
+            NOTES=$(git log "$PREV_TAG..v$VERSION" --pretty=format:"- %s" --no-merges)
+        else
+            NOTES=$(git log "v$VERSION" --pretty=format:"- %s" --no-merges)
+        fi
     else
-        NOTES=$(git log "v$VERSION" --pretty=format:"- %s" --no-merges)
+        NOTES="- Release $VERSION"
     fi
 
     gh release create "v$VERSION" \

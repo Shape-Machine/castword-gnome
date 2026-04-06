@@ -1,3 +1,6 @@
+# NOTE: This file (and rules/compat) is a reference for dpkg-buildpackage.
+# The active release build uses fpm (scripts/release.sh) — not dpkg-buildpackage.
+# Only postinst and changelog are used by the current release process.
 Source: castword-gnome
 Section: utils
 Priority: optional
