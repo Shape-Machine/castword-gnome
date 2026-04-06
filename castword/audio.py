@@ -99,7 +99,7 @@ class AudioRecorder:
         self._has_speech = False
         self._silence_start = None
         self._chunk_start = time.monotonic()
-        self._last_speech_time = None
+        self._last_speech_time = time.monotonic()  # enables idle timeout before first speech
 
         pipeline.set_state(Gst.State.PLAYING)
         self._pipeline = pipeline
@@ -116,6 +116,10 @@ class AudioRecorder:
         if self._bus_watch_id is not None:
             GLib.source_remove(self._bus_watch_id)
             self._bus_watch_id = None
+
+        # Release buffer memory regardless of speech state
+        with self._lock:
+            self._pcm_buffer.clear()
 
     def is_running(self) -> bool:
         return self._pipeline is not None
@@ -180,6 +184,10 @@ class AudioRecorder:
         else:
             if self._silence_start is None:
                 self._silence_start = now
+            # No speech yet — discard accumulated buffer to prevent unbounded growth
+            if not self._has_speech:
+                with self._lock:
+                    self._pcm_buffer.clear()
 
         # Silence-based flush: speech detected and then silence for long enough
         if (self._has_speech and is_silent and self._silence_start is not None
