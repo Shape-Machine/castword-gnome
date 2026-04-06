@@ -86,7 +86,8 @@ def make_stt_provider(settings) -> BaseSpeechProvider:
         model_path = settings.get_string("whisper-local-model-path")
         if not model_path:
             raise ProviderError("No local model path configured. Set it in Preferences → Speech.")
-        return WhisperLocalProvider(model_path=model_path)
+        binary_path = settings.get_string("whisper-local-binary-path")
+        return WhisperLocalProvider(model_path=model_path, binary_path=binary_path)
 
     if name == "assemblyai":
         key = lookup_secret("assemblyai") or ""

@@ -480,6 +480,11 @@ class CastwordPreferences(Adw.PreferencesWindow):
         model_path_entry.set_text(self._settings.get_string("whisper-local-model-path"))
         model_path_entry.connect("changed", lambda r: self._settings.set_string("whisper-local-model-path", r.get_text()))
         whisper_local_group.add(model_path_entry)
+
+        binary_path_entry = Adw.EntryRow(title="Binary path")
+        binary_path_entry.set_text(self._settings.get_string("whisper-local-binary-path"))
+        binary_path_entry.connect("changed", lambda r: self._settings.set_string("whisper-local-binary-path", r.get_text()))
+        whisper_local_group.add(binary_path_entry)
         page.add(whisper_local_group)
 
         # AssemblyAI settings
