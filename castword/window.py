@@ -105,26 +105,44 @@ class CastwordWindow(Adw.Window):
         input_scroll.set_child(self._input_view)
         content.append(input_scroll)
 
-        # ── Tone buttons row ──────────────────────────────────────────
-        tone_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
-        content.append(tone_row)
+        # ── Recording status bar (hidden when stt-enabled is off) ────────
+        recording_bar = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=8,
+        )
+        recording_bar.add_css_class("card")
 
+        self._recording_status_icon = Gtk.Image()
+        self._recording_status_icon.set_margin_start(10)
+        self._recording_status_icon.set_margin_top(8)
+        self._recording_status_icon.set_margin_bottom(8)
+
+        self._recording_status_label = Gtk.Label(hexpand=True, xalign=0.0)
+        self._recording_status_label.set_margin_start(2)
+
+        self._recording_toggle_btn = Gtk.Button()
+        self._recording_toggle_btn.add_css_class("flat")
+        self._recording_toggle_btn.set_margin_end(4)
+        self._recording_toggle_btn.set_margin_top(4)
+        self._recording_toggle_btn.set_margin_bottom(4)
+        self._recording_toggle_btn.connect("clicked", self._on_recording_toggle_clicked)
+
+        recording_bar.append(self._recording_status_icon)
+        recording_bar.append(self._recording_status_label)
+        recording_bar.append(self._recording_toggle_btn)
+
+        self._settings.bind("stt-enabled", recording_bar, "visible", Gio.SettingsBindFlags.DEFAULT)
+        self._set_mic_recording(False)  # initialise to paused visual state
+        content.append(recording_bar)
+
+        # ── Tone buttons row ──────────────────────────────────────────
         tone_scroll = Gtk.ScrolledWindow(
             vscrollbar_policy=Gtk.PolicyType.NEVER,
             hscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
-            hexpand=True,
         )
         self._tone_box = Gtk.Box(spacing=8)
         tone_scroll.set_child(self._tone_box)
-        tone_row.append(tone_scroll)
-
-        self._mic_btn = Gtk.Button(icon_name="audio-input-microphone-symbolic")
-        self._mic_btn.add_css_class("flat")
-        self._mic_btn.set_tooltip_text("Toggle speech input")
-        self._mic_btn.set_margin_start(4)
-        self._settings.bind("stt-enabled", self._mic_btn, "visible", Gio.SettingsBindFlags.DEFAULT)
-        self._mic_btn.connect("clicked", self._on_mic_clicked)
-        tone_row.append(self._mic_btn)
+        content.append(tone_scroll)
 
         self._tone_buttons: list[Gtk.Button] = []
         self._rebuild_tone_buttons()
@@ -389,7 +407,7 @@ class CastwordWindow(Adw.Window):
             self._recorder.stop()
             self._set_mic_recording(False)
 
-    def _on_mic_clicked(self, _btn) -> None:
+    def _on_recording_toggle_clicked(self, _btn) -> None:
         if self._recorder.is_running():
             self._recorder.stop()
             self._set_mic_recording(False)
@@ -399,11 +417,17 @@ class CastwordWindow(Adw.Window):
 
     def _set_mic_recording(self, recording: bool) -> None:
         if recording:
-            self._mic_btn.set_icon_name("media-record-symbolic")
-            self._mic_btn.add_css_class("accent")
+            self._recording_status_icon.set_from_icon_name("media-record-symbolic")
+            self._recording_status_icon.add_css_class("error")   # red in Adwaita
+            self._recording_status_icon.remove_css_class("dim-label")
+            self._recording_status_label.set_text("Listening...")
+            self._recording_toggle_btn.set_label("Pause")
         else:
-            self._mic_btn.set_icon_name("audio-input-microphone-symbolic")
-            self._mic_btn.remove_css_class("accent")
+            self._recording_status_icon.set_from_icon_name("audio-input-microphone-symbolic")
+            self._recording_status_icon.remove_css_class("error")
+            self._recording_status_icon.add_css_class("dim-label")
+            self._recording_status_label.set_text("Microphone paused")
+            self._recording_toggle_btn.set_label("Resume")
 
     # ------------------------------------------------------------------ #
     # STT transcription — audio chunk → text
