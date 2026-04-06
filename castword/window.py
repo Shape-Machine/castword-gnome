@@ -1,4 +1,5 @@
 import asyncio
+import queue
 import threading
 
 import gi
@@ -24,6 +25,13 @@ class CastwordWindow(Adw.Window):
         self._prefs_open: bool = False
         self._transcribing_count: int = 0
         self._recorder = None
+
+        # Serialized transcription queue — ensures chunks are appended in speech order
+        self._transcribe_queue: queue.Queue = queue.Queue()
+        self._transcribe_worker_thread = threading.Thread(
+            target=self._transcribe_worker_loop, daemon=True
+        )
+        self._transcribe_worker_thread.start()
 
         self.set_hide_on_close(True)
 
@@ -233,8 +241,8 @@ class CastwordWindow(Adw.Window):
         # Clear diff when input changes
         self._input_buffer.connect("changed", self._on_input_changed)
 
-        # Refresh status bar when STT is toggled in preferences
-        self._settings.connect("changed::stt-enabled", lambda *_: self._update_status_bar())
+        # Stop/start recorder when STT is toggled in preferences
+        self._settings.connect("changed::stt-enabled", self._on_stt_enabled_changed)
 
     # ------------------------------------------------------------------ #
     # Preferences
@@ -413,6 +421,15 @@ class CastwordWindow(Adw.Window):
     # STT recording — window show/hide lifecycle
     # ------------------------------------------------------------------ #
 
+    def _on_stt_enabled_changed(self, settings, key) -> None:
+        if settings.get_boolean(key):
+            self._maybe_start_recorder()
+        else:
+            if self._recorder and self._recorder.is_running():
+                self._recorder.stop()
+                self._set_mic_recording(False)
+        self._update_status_bar()
+
     def _on_window_shown(self, _window) -> None:
         self._maybe_start_recorder()
 
@@ -422,7 +439,8 @@ class CastwordWindow(Adw.Window):
                 and not self._recorder.is_running()
                 and self.get_visible()):
             self._recorder.start()
-            self._set_mic_recording(True)
+            if self._recorder.is_running():
+                self._set_mic_recording(True)
 
     def _on_window_hidden(self, _window) -> None:
         if self._recorder.is_running():
@@ -443,8 +461,9 @@ class CastwordWindow(Adw.Window):
             self._toast_overlay.add_toast(Adw.Toast(title="Mic paused", timeout=2))
         else:
             self._recorder.start()
-            self._set_mic_recording(True)
-            self._toast_overlay.add_toast(Adw.Toast(title="Mic recording", timeout=2))
+            if self._recorder.is_running():
+                self._set_mic_recording(True)
+                self._toast_overlay.add_toast(Adw.Toast(title="Mic recording", timeout=2))
 
     def _on_recording_toggle_clicked(self, _btn) -> None:
         self.toggle_mic()
@@ -501,6 +520,9 @@ class CastwordWindow(Adw.Window):
 
     def _on_audio_chunk(self, wav_bytes: bytes) -> None:
         """Called on GTK main thread when AudioRecorder emits a speech chunk."""
+        if not self._settings.get_boolean("stt-enabled"):
+            return
+
         try:
             from castword.providers import make_stt_provider
             provider = make_stt_provider(self._settings)
@@ -510,22 +532,22 @@ class CastwordWindow(Adw.Window):
 
         self._transcribing_count += 1
         self._update_status_bar()
+        self._transcribe_queue.put((wav_bytes, provider))
 
-        threading.Thread(
-            target=self._transcribe_thread,
-            args=(wav_bytes, provider),
-            daemon=True,
-        ).start()
-
-    def _transcribe_thread(self, wav_bytes: bytes, provider) -> None:
-        try:
-            text = asyncio.run(provider.transcribe(wav_bytes))
-            if text.strip():
-                GLib.idle_add(self._on_transcription_done, text)
-            else:
-                GLib.idle_add(self._on_transcription_done, None)
-        except Exception as exc:
-            GLib.idle_add(self._on_transcription_error, str(exc))
+    def _transcribe_worker_loop(self) -> None:
+        """Single worker thread — processes chunks one at a time to preserve order."""
+        while True:
+            item = self._transcribe_queue.get()
+            if item is None:
+                break
+            wav_bytes, provider = item
+            try:
+                text = asyncio.run(provider.transcribe(wav_bytes))
+                GLib.idle_add(self._on_transcription_done, text.strip() if text else None)
+            except Exception as exc:
+                GLib.idle_add(self._on_transcription_error, str(exc))
+            finally:
+                self._transcribe_queue.task_done()
 
     def _on_transcription_done(self, text: str | None):
         self._transcribing_count = max(0, self._transcribing_count - 1)

@@ -14,6 +14,8 @@ class WhisperProvider(BaseSpeechProvider):
         self._model = model
 
     async def transcribe(self, audio_bytes: bytes) -> str:
+        if not audio_bytes:
+            return ""
         try:
             client = AsyncOpenAI(api_key=self._api_key)
             response = await client.audio.transcriptions.create(
