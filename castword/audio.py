@@ -27,6 +27,7 @@ class AudioRecorder:
     """
 
     SILENCE_THRESHOLD_DB = -40.0   # RMS below this = silence (dBFS)
+    SPEECH_THRESHOLD_DB  = -35.0   # RMS must exceed this to count as real speech for idle timer
     SILENCE_DURATION_S   = 1.5     # seconds of silence before emitting a chunk
     MAX_CHUNK_DURATION_S = 30.0    # safety flush regardless of silence
     IDLE_TIMEOUT_S       = 5.0     # auto-stop after this many seconds without speech
@@ -183,7 +184,8 @@ class AudioRecorder:
         if not is_silent:
             self._has_speech = True
             self._silence_start = None
-            self._last_speech_time = now
+            if rms_db >= self.SPEECH_THRESHOLD_DB:
+                self._last_speech_time = now
         else:
             if self._silence_start is None:
                 self._silence_start = now
