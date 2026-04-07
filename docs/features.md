@@ -10,10 +10,10 @@ _Last updated: 2026-04-07_
 - Three output modes: clipboard + diff (default), clipboard only, or replace input text in place.
 
 ## Tone System
-- Six built-in tones: Concise, Direct, Flirty, Formal, Friendly, Playful.
+- Seven built-in tones: Direct, Technical, Professional, Social (all enabled by default), plus TL;DR, Flirty, and Playful (disabled by default).
 - Create custom tones with a name and a fully editable system prompt.
 - Enable, disable, reorder, edit, or delete any tone from Preferences.
-- Reset to the six built-in defaults at any time.
+- Reset to the built-in defaults at any time.
 
 ## AI Providers
 - Supports OpenAI (GPT-4o), Anthropic (Claude), Google Gemini, and Ollama (local models).
