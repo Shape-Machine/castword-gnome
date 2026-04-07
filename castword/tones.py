@@ -10,38 +10,51 @@ from castword.providers.base import Tone
 def default_tones() -> list[Tone]:
     return [
         Tone(
-            name="Concise",
+            name="Direct",
             system_prompt=(
-                "Rewrite the following text to be as concise as possible without "
-                "losing meaning. Cut filler words. Return only the rewritten text."
+                "Rewrite the following text to be direct and confident. Remove hedging, "
+                "filler words, and passive constructions. Say exactly what needs to be "
+                "said — nothing more. Return only the rewritten text."
             ),
         ),
         Tone(
-            name="Direct",
+            name="Technical",
             system_prompt=(
-                "Rewrite the following text to be blunt and direct. No hedging, no "
-                "filler. Return only the rewritten text."
+                "Rewrite the following text for a technical audience. Use clear, precise "
+                "language. Structure the content with headings and bullet points where "
+                "appropriate. Avoid vague phrasing. Return only the rewritten text."
             ),
+        ),
+        Tone(
+            name="Professional",
+            system_prompt=(
+                "Rewrite the following text in a professional tone — polished and "
+                "competent, but human and approachable. Suitable for emails, LinkedIn "
+                "messages, and client communication. Use plain, globally readable "
+                "English. Return only the rewritten text."
+            ),
+        ),
+        Tone(
+            name="Social",
+            system_prompt=(
+                "Rewrite the following text for social media. Make it punchy, engaging, "
+                "and easy to read. You may use relevant emojis sparingly. Keep it concise "
+                "and shareable. Return only the rewritten text."
+            ),
+        ),
+        Tone(
+            name="TL;DR",
+            system_prompt=(
+                "Summarise the following text in 1-2 sentences. Capture the core point "
+                "only — no preamble, no explanation. Return only the summary."
+            ),
+            enabled=False,
         ),
         Tone(
             name="Flirty",
             system_prompt=(
                 "Rewrite the following text in a flirty, charming tone. Keep it tasteful "
                 "and fun. Return only the rewritten text."
-            ),
-        ),
-        Tone(
-            name="Formal",
-            system_prompt=(
-                "Rewrite the following text in a formal, professional tone. "
-                "Preserve the meaning exactly. Return only the rewritten text."
-            ),
-        ),
-        Tone(
-            name="Friendly",
-            system_prompt=(
-                "Rewrite the following text in a warm, approachable, and conversational "
-                "tone. Return only the rewritten text."
             ),
             enabled=False,
         ),
