@@ -1,35 +1,60 @@
 <p align="center">
-  <img src="data/icons/hicolor/scalable/apps/xyz.shapemachine.castword-gnome.svg" width="400" alt="castword icon" />
+  <img src="data/icons/hicolor/scalable/apps/xyz.shapemachine.castword-gnome.svg" width="96" alt="castword icon" />
 </p>
 
 # castword
 
-A GNOME quick-launcher overlay that rewrites your draft text in any tone — formal, concise, playful, executive, and more — via a single keypress.
+GNOME overlay for AI-powered text rewriting. Press a shortcut from anywhere, paste or speak your text, pick a tone — result is on your clipboard.
+
+Runs as a D-Bus service. GTK4 + Libadwaita. Supports OpenAI, Anthropic, Gemini, and Ollama.
 
 ---
 
-## What is castword?
+## Screenshots
 
-castword sits silently in the background as a D-Bus service. When you press your configured shortcut, it opens a floating overlay where you can paste or type text, choose a rewrite tone, and get the result copied straight to your clipboard — without leaving whatever you were doing.
+<p align="center">
+  <img src="docs/screenshots/main-diff.png" width="480" alt="Main window with diff output" />
+  <img src="docs/screenshots/main-stt.png" width="480" alt="Main window — STT listening" />
+</p>
 
-**Key features:**
-- Instant overlay — no window switching
-- Multiple rewrite tones (Formal, Concise, Executive, Direct, and more)
-- Supports OpenAI, Anthropic, Gemini, and Ollama (local)
-- API keys auto-detected from your shell environment
-- Fully customisable tones via the Preferences window
-- GNOME-native: GTK4 + Libadwaita, D-Bus activated
+<p align="center">
+  <img src="docs/screenshots/prefs-tones.png" width="320" alt="Preferences — Tones" />
+  <img src="docs/screenshots/prefs-providers.png" width="320" alt="Preferences — Providers" />
+  <img src="docs/screenshots/prefs-behaviour.png" width="320" alt="Preferences — Behaviour" />
+  <img src="docs/screenshots/prefs-speech.png" width="320" alt="Preferences — Speech" />
+</p>
 
 ---
 
 ## Install
 
-### Quick install (recommended)
+### Arch (AUR)
+
+```bash
+yay -S castword-gnome-bin
+```
+
+### Other packages
+
+| Format | Download |
+|---|---|
+| Debian `.deb` | [castword-gnome-2026-04-07-01.deb](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-01/castword-gnome-2026-04-07-01.deb) |
+| AppImage | [Castword-2026-04-07-01-x86_64.AppImage](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-01/Castword-2026-04-07-01-x86_64.AppImage) |
+| RPM | [castword-gnome-2026-04-07-01.rpm](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-01/castword-gnome-2026-04-07-01.rpm) |
+| Flatpak | [xyz.shapemachine.castword-gnome-2026-04-07-01.flatpak](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-01/xyz.shapemachine.castword-gnome-2026-04-07-01.flatpak) |
+| Source tarball | [castword-gnome-2026-04-07-01.tar.gz](https://github.com/Shape-Machine/castword-gnome/releases/tag/v2026-04-07-01) |
+
+### From source
 
 **Prerequisites:** Python 3.11+, GTK4, Libadwaita, `uv`
 
-On Arch: `sudo pacman -S python-gobject`  
-On Debian/Ubuntu: `sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-4.0 gir1.2-adw-1`
+```bash
+# Arch
+sudo pacman -S python-gobject
+
+# Debian/Ubuntu
+sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-4.0 gir1.2-adw-1
+```
 
 ```bash
 git clone https://github.com/Shape-Machine/castword-gnome.git
@@ -37,128 +62,85 @@ cd castword-gnome
 make install
 ```
 
-`make install` does everything in one shot: creates a `.venv`, installs the package, registers the D-Bus service, installs the desktop file, icons, AppStream metadata, and the GSettings schema.
-
-### Packages
-
-| Format | Download |
-|---|---|
-| Arch AUR | `yay -S castword-gnome-bin` |
-| Debian `.deb` | [castword-gnome-2026-04-07-01.deb](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-01/castword-gnome-2026-04-07-01.deb) |
-| AppImage | [Castword-2026-04-07-01-x86_64.AppImage](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-01/Castword-2026-04-07-01-x86_64.AppImage) |
-| RPM | [castword-gnome-2026-04-07-01.rpm](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-01/castword-gnome-2026-04-07-01.rpm) |
-| Flatpak | [xyz.shapemachine.castword-gnome-2026-04-07-01.flatpak](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-01/xyz.shapemachine.castword-gnome-2026-04-07-01.flatpak) |
-| Source tarball | [castword-gnome-2026-04-07-01.tar.gz](https://github.com/Shape-Machine/castword-gnome/releases/tag/v2026-04-07-01) |
+`make install` creates a `.venv`, installs the package, and registers the D-Bus service, desktop file, icons, AppStream metadata, and GSettings schema.
 
 ---
 
-## Register the D-Bus service
+## Setup
 
-`make install` handles this automatically. The D-Bus service file is written to `~/.local/share/dbus-1/services/` so that GNOME can activate castword on demand — you do not need to keep it running in the background yourself.
+### Keyboard shortcut
 
-If you ever need to re-register manually:
+castword is activated via a custom GNOME keyboard shortcut:
 
-```bash
-make install-service
-```
-
-To verify activation is working:
-
-```bash
-gdbus call --session \
-  --dest xyz.shapemachine.castword-gnome \
-  --object-path /xyz/shapemachine/castword_gnome \
-  --method xyz.shapemachine.castword_gnome.Activate
-```
-
----
-
-## Set up a keyboard shortcut
-
-castword is launched via a custom GNOME keyboard shortcut. After running `make install`:
-
-1. Open **GNOME Settings → Keyboard → Keyboard Shortcuts → View and Customise Shortcuts → Custom Shortcuts**
-2. Click **+** to add a new shortcut
-3. Set:
+1. Open **GNOME Settings → Keyboard → Custom Shortcuts**
+2. Add a new shortcut:
    - **Name:** `castword`
-   - **Command:** path printed by `which castword` (e.g. `/home/you/.venv/bin/castword` or `/home/you/castword-gnome/.venv/bin/castword`)
-   - **Shortcut:** your preferred key combo (e.g. `Super+W`)
+   - **Command:** `castword` (or the full path from `which castword`)
+   - **Shortcut:** `Super+Shift+W` (or your preference)
 
 The app will prompt you to set a shortcut on first launch if none is configured.
 
----
+### Provider
 
-## Configure a provider
-
-castword auto-detects API keys from your environment — no manual config step is needed if your keys are already exported in `~/.bashrc`, `~/.zshrc`, `~/.profile`, `~/.config/fish/config.fish`, or `~/.env`.
+API keys are auto-detected from your environment — no manual config needed if keys are already exported in your shell config.
 
 | Provider | Environment variable |
 |---|---|
 | OpenAI | `OPENAI_API_KEY` |
 | Anthropic | `ANTHROPIC_API_KEY` |
 | Google Gemini | `GEMINI_API_KEY` or `GOOGLE_API_KEY` |
-| Ollama | _(no key needed — runs locally)_ |
+| Ollama | _(none — runs locally)_ |
 
-If you prefer to keep the key separate, create `~/.config/castword/.env`:
+To store keys separately, create `~/.config/castword/.env`:
 
 ```bash
-mkdir -p ~/.config/castword
 echo 'OPENAI_API_KEY=sk-...' >> ~/.config/castword/.env
 ```
 
-### Switching provider and model
+Switch provider and model in **Preferences → Providers**.
 
-Open **castword → Preferences (gear icon) → Provider** and choose the provider and model from the dropdowns. Changes take effect immediately.
-
-### Ollama (local)
-
-Start Ollama with your chosen model before launching castword:
+### Ollama
 
 ```bash
 ollama serve
 ollama pull llama3
 ```
 
-Then select **Ollama** in Preferences and pick the model.
+Then select **Ollama** in Preferences.
 
 ---
 
-## Customise tones
+## Tones
 
-Tones are rewrite instructions sent to the LLM alongside your text. castword ships with six defaults:
+castword ships with seven built-in tones:
 
-| Tone | Enabled by default |
-|---|---|
-| Formal | yes |
-| Concise | yes |
-| Executive | yes |
-| Direct | yes |
-| Playful | no |
-| Friendly | no |
+| Tone | Default | Purpose |
+|---|---|---|
+| Direct | ✅ | Remove hedging, say exactly what needs to be said |
+| Technical | ✅ | Structured with headings/bullets, precise language |
+| Professional | ✅ | Polished and human — emails, LinkedIn, client comms |
+| Social | ✅ | Punchy, engaging, emoji-ok — posts and marketing |
+| TL;DR | — | 1–2 sentence summary |
+| Flirty | — | Fun |
+| Playful | — | Fun |
 
-To add, edit, reorder, or toggle tones: open **Preferences → Tones**. Each tone has a name and a system prompt — the system prompt is the instruction that shapes how the LLM rewrites your text.
+Add, edit, reorder, or toggle tones in **Preferences → Tones**. Each tone has a name and a fully editable system prompt.
 
 ---
 
-## Contributing
-
-Bug reports and feature requests: [github.com/Shape-Machine/castword-gnome/issues](https://github.com/Shape-Machine/castword-gnome/issues)
-
-### Development
+## Development
 
 ```bash
 git clone https://github.com/Shape-Machine/castword-gnome.git
 cd castword-gnome
-make run    # compiles schema locally and launches the app
+make run
 ```
-
-Useful make targets:
 
 | Command | Description |
 |---|---|
 | `make run` | Compile schema locally and launch |
-| `make install` | Full install (venv + service + desktop + schema + icons) |
-| `make install-schema` | Copy GSettings schema system-wide (needed for D-Bus activation) |
-| `make uninstall-schema` | Remove system-wide schema |
-| `make compile-schema` | Recompile schema in `data/` only |
-| `make clean` | Remove `__pycache__`, `.pyc`, compiled schema, and `.venv` |
+| `make install` | Full system install |
+| `make clean` | Remove `__pycache__`, `.pyc`, compiled schema, `.venv` |
+| `make release VERSION=yyyy-mm-dd-NN` | Build and publish all package formats |
+
+Bug reports and feature requests: [github.com/Shape-Machine/castword-gnome/issues](https://github.com/Shape-Machine/castword-gnome/issues)
