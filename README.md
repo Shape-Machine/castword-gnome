@@ -44,11 +44,11 @@ make install
 | Format | Download |
 |---|---|
 | Arch AUR | `yay -S castword-gnome-bin` |
-| Debian `.deb` | [castword-gnome-2026-04-07-00.deb](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-00/castword-gnome-2026-04-07-00.deb) |
-| AppImage | [Castword-2026-04-07-00-x86_64.AppImage](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-00/Castword-2026-04-07-00-x86_64.AppImage) |
-| RPM | [castword-gnome-2026-04-07-00.rpm](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-00/castword-gnome-2026-04-07-00.rpm) |
-| Flatpak | [xyz.shapemachine.castword-gnome-2026-04-07-00.flatpak](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-00/xyz.shapemachine.castword-gnome-2026-04-07-00.flatpak) |
-| Source tarball | [castword-gnome-2026-04-07-00.tar.gz](https://github.com/Shape-Machine/castword-gnome/releases/tag/v2026-04-07-00) |
+| Debian `.deb` | [castword-gnome-2026-04-07-01.deb](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-01/castword-gnome-2026-04-07-01.deb) |
+| AppImage | [Castword-2026-04-07-01-x86_64.AppImage](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-01/Castword-2026-04-07-01-x86_64.AppImage) |
+| RPM | [castword-gnome-2026-04-07-01.rpm](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-01/castword-gnome-2026-04-07-01.rpm) |
+| Flatpak | [xyz.shapemachine.castword-gnome-2026-04-07-01.flatpak](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-01/xyz.shapemachine.castword-gnome-2026-04-07-01.flatpak) |
+| Source tarball | [castword-gnome-2026-04-07-01.tar.gz](https://github.com/Shape-Machine/castword-gnome/releases/tag/v2026-04-07-01) |
 
 ---
 
