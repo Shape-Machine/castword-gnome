@@ -30,6 +30,12 @@ yay -S castword-gnome-bin
 
 ---
 
+<p align="center">
+  <a href="https://buy.stripe.com/9B68wQgat5kIgSBbXjes006"><img src="https://img.shields.io/badge/Sponsor-Castword-teal?style=for-the-badge" alt="Sponsor Castword" /></a>
+</p>
+
+---
+
 ## Screenshots
 
 <p align="center">
