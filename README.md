@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="data/icons/hicolor/scalable/apps/xyz.shapemachine.castword-gnome.svg" width="96" alt="castword icon" />
+  <img src="data/icons/hicolor/scalable/apps/xyz.shapemachine.castword-gnome.svg" width="200" alt="castword icon" />
 </p>
 
 # castword
