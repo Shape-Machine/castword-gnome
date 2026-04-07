@@ -10,22 +10,6 @@ Runs as a D-Bus service. GTK4 + Libadwaita. Supports OpenAI, Anthropic, Gemini, 
 
 ---
 
-## Screenshots
-
-<p align="center">
-  <img src="docs/screenshots/main-diff.png" width="480" alt="Main window with diff output" />
-  <img src="docs/screenshots/main-stt.png" width="480" alt="Main window — STT listening" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/prefs-tones.png" width="320" alt="Preferences — Tones" />
-  <img src="docs/screenshots/prefs-providers.png" width="320" alt="Preferences — Providers" />
-  <img src="docs/screenshots/prefs-behaviour.png" width="320" alt="Preferences — Behaviour" />
-  <img src="docs/screenshots/prefs-speech.png" width="320" alt="Preferences — Speech" />
-</p>
-
----
-
 ## Install
 
 ### Arch (AUR)
@@ -43,6 +27,22 @@ yay -S castword-gnome-bin
 | RPM | [castword-gnome-2026-04-07-01.rpm](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-01/castword-gnome-2026-04-07-01.rpm) |
 | Flatpak | [xyz.shapemachine.castword-gnome-2026-04-07-01.flatpak](https://github.com/Shape-Machine/castword-gnome/releases/download/v2026-04-07-01/xyz.shapemachine.castword-gnome-2026-04-07-01.flatpak) |
 | Source tarball | [castword-gnome-2026-04-07-01.tar.gz](https://github.com/Shape-Machine/castword-gnome/releases/tag/v2026-04-07-01) |
+
+---
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/main-diff.png" width="480" alt="Main window with diff output" />
+  <img src="docs/screenshots/main-stt.png" width="480" alt="Main window — STT listening" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/prefs-tones.png" width="320" alt="Preferences — Tones" />
+  <img src="docs/screenshots/prefs-providers.png" width="320" alt="Preferences — Providers" />
+  <img src="docs/screenshots/prefs-behaviour.png" width="320" alt="Preferences — Behaviour" />
+  <img src="docs/screenshots/prefs-speech.png" width="320" alt="Preferences — Speech" />
+</p>
 
 ### From source
 
