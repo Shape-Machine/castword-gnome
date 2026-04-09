@@ -56,6 +56,16 @@ class CastwordPreferences(Adw.PreferencesWindow):
         self.connect("close-request", lambda _: setattr(self, "_closed", True) or False)
         self._build_ui()
 
+    def _save_setting(self, key: str, value: str) -> None:
+        """Write to GSettings only if the window has not been closed.
+
+        Focus-leave events fire during window teardown, so without this guard
+        a partially-typed value would be persisted when the user closes
+        Preferences without pressing Enter.
+        """
+        if not self._closed:
+            self._settings.set_string(key, value)
+
     # ------------------------------------------------------------------ #
     # Top-level pages
     # ------------------------------------------------------------------ #
@@ -312,7 +322,10 @@ class CastwordPreferences(Adw.PreferencesWindow):
         if provider_id == "ollama":
             url_row = Adw.EntryRow(title="Base URL")
             url_row.set_text(self._settings.get_string("ollama-base-url"))
-            url_row.connect("changed", lambda r: self._settings.set_string("ollama-base-url", r.get_text()))
+            url_row.connect("apply", lambda r: self._settings.set_string("ollama-base-url", r.get_text()))
+            url_focus_ctrl = Gtk.EventControllerFocus()
+            url_focus_ctrl.connect("leave", lambda _ctrl, r=url_row: self._save_setting("ollama-base-url", r.get_text()))
+            url_row.add_controller(url_focus_ctrl)
             group.add(url_row)
         else:
             key_entry = Adw.PasswordEntryRow(title="API Key")
@@ -327,7 +340,10 @@ class CastwordPreferences(Adw.PreferencesWindow):
         model_key = f"{provider_id}-model"
         model_entry = Adw.EntryRow(title="Model")
         model_entry.set_text(self._settings.get_string(model_key))
-        model_entry.connect("changed", lambda r, k=model_key: self._settings.set_string(k, r.get_text()))
+        model_entry.connect("apply", lambda r, k=model_key: self._settings.set_string(k, r.get_text()))
+        model_focus_ctrl = Gtk.EventControllerFocus()
+        model_focus_ctrl.connect("leave", lambda _ctrl, r=model_entry, k=model_key: self._save_setting(k, r.get_text()))
+        model_entry.add_controller(model_focus_ctrl)
         group.add(model_entry)
 
         # Test connection button
@@ -488,6 +504,7 @@ class CastwordPreferences(Adw.PreferencesWindow):
         path = _detect_whisper_binary()
         if path:
             entry.set_text(path)
+            self._settings.set_string("whisper-local-binary-path", path)
         else:
             entry.set_text("")
             self.add_toast(Adw.Toast(
@@ -557,7 +574,10 @@ class CastwordPreferences(Adw.PreferencesWindow):
 
         whisper_model_entry = Adw.EntryRow(title="Model")
         whisper_model_entry.set_text(self._settings.get_string("whisper-model"))
-        whisper_model_entry.connect("changed", lambda r: self._settings.set_string("whisper-model", r.get_text()))
+        whisper_model_entry.connect("apply", lambda r: self._settings.set_string("whisper-model", r.get_text()))
+        wm_focus_ctrl = Gtk.EventControllerFocus()
+        wm_focus_ctrl.connect("leave", lambda _ctrl, r=whisper_model_entry: self._save_setting("whisper-model", r.get_text()))
+        whisper_model_entry.add_controller(wm_focus_ctrl)
         whisper_group.add(whisper_model_entry)
         page.add(whisper_group)
 
@@ -574,7 +594,10 @@ class CastwordPreferences(Adw.PreferencesWindow):
         )
         binary_path_entry = Adw.EntryRow(title="Binary path")
         binary_path_entry.set_text(saved_binary)
-        binary_path_entry.connect("changed", lambda r: self._settings.set_string("whisper-local-binary-path", r.get_text()))
+        binary_path_entry.connect("apply", lambda r: self._settings.set_string("whisper-local-binary-path", r.get_text()))
+        bp_focus_ctrl = Gtk.EventControllerFocus()
+        bp_focus_ctrl.connect("leave", lambda _ctrl, r=binary_path_entry: self._save_setting("whisper-local-binary-path", r.get_text()))
+        binary_path_entry.add_controller(bp_focus_ctrl)
 
         detect_btn = Gtk.Button(icon_name="edit-find-symbolic", valign=Gtk.Align.CENTER)
         detect_btn.add_css_class("flat")
@@ -587,7 +610,10 @@ class CastwordPreferences(Adw.PreferencesWindow):
         # Model path — manual entry
         model_path_entry = Adw.EntryRow(title="Model path (.bin file)")
         model_path_entry.set_text(self._settings.get_string("whisper-local-model-path"))
-        model_path_entry.connect("changed", lambda r: self._settings.set_string("whisper-local-model-path", r.get_text()))
+        model_path_entry.connect("apply", lambda r: self._settings.set_string("whisper-local-model-path", r.get_text()))
+        mp_focus_ctrl = Gtk.EventControllerFocus()
+        mp_focus_ctrl.connect("leave", lambda _ctrl, r=model_path_entry: self._save_setting("whisper-local-model-path", r.get_text()))
+        model_path_entry.add_controller(mp_focus_ctrl)
         whisper_local_group.add(model_path_entry)
 
         # Detect binary and scan for models off the main thread so the
@@ -610,7 +636,10 @@ class CastwordPreferences(Adw.PreferencesWindow):
                                 activatable=True,
                             )
                             row.add_suffix(Gtk.Image(icon_name="go-next-symbolic", valign=Gtk.Align.CENTER))
-                            row.connect("activated", lambda _r, p=mp: model_path_entry.set_text(p))
+                            def _select_model(_, p=mp):
+                                model_path_entry.set_text(p)
+                                self._settings.set_string("whisper-local-model-path", p)
+                            row.connect("activated", _select_model)
                             whisper_local_group.add(row)
                 except Exception:
                     pass
@@ -701,5 +730,4 @@ class CastwordPreferences(Adw.PreferencesWindow):
 
     def _switch_to_providers_page(self):
         """Navigate to the Providers preferences page."""
-        # Pages are indexed in add() order: Tones=0, Providers=1, Behaviour=2, Speech=3
         self.set_visible_page(self._providers_page)
