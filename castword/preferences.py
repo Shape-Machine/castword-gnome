@@ -268,8 +268,15 @@ class CastwordPreferences(Adw.PreferencesWindow):
         self._key_entries: dict[str, Adw.PasswordEntryRow] = {}
         self._model_entries: dict[str, Adw.EntryRow] = {}
 
+        # Scan shell configs once so key_scout.scan() is not called per-provider
+        from castword import key_scout
+        try:
+            discovered = key_scout.scan()
+        except Exception:
+            discovered = {}
+
         for provider_id, label in zip(_PROVIDERS, _PROVIDER_LABELS):
-            group, key_entry, model_entry = self._build_provider_group(provider_id, label)
+            group, key_entry, model_entry = self._build_provider_group(provider_id, label, discovered)
             self._provider_groups[provider_id] = group
             if key_entry:
                 self._key_entries[provider_id] = key_entry
@@ -280,7 +287,7 @@ class CastwordPreferences(Adw.PreferencesWindow):
         self._update_provider_visibility(active)
         return page
 
-    def _build_provider_group(self, provider_id: str, label: str):
+    def _build_provider_group(self, provider_id: str, label: str, discovered: dict | None = None):
         group = Adw.PreferencesGroup(title=f"{label} Settings")
 
         key_entry = None
@@ -293,7 +300,7 @@ class CastwordPreferences(Adw.PreferencesWindow):
             group.add(url_row)
         else:
             key_entry = Adw.PasswordEntryRow(title="API Key")
-            self._prefill_key(provider_id, key_entry)
+            self._prefill_key(provider_id, key_entry, discovered)
             # Save on Enter (apply) or focus-out, not on every keystroke
             key_entry.connect("apply", self._on_key_changed, provider_id)
             focus_ctrl = Gtk.EventControllerFocus()
@@ -321,14 +328,15 @@ class CastwordPreferences(Adw.PreferencesWindow):
 
         return group, key_entry, model_entry
 
-    def _prefill_key(self, provider_id: str, entry: Adw.PasswordEntryRow):
+    def _prefill_key(self, provider_id: str, entry: Adw.PasswordEntryRow, discovered: dict | None = None):
         from castword.providers import lookup_secret, store_secret
-        from castword import key_scout
         existing = lookup_secret(provider_id)
         if existing:
             entry.set_text(existing)
             return
-        discovered = key_scout.scan()
+        if discovered is None:
+            from castword import key_scout
+            discovered = key_scout.scan()
         if provider_id in discovered:
             key = discovered[provider_id]
             entry.set_text(key)
@@ -518,11 +526,10 @@ class CastwordPreferences(Adw.PreferencesWindow):
         # Only auto-detect when the key has never been explicitly set (user_value is None).
         # If the user cleared the field (set to ""), respect that choice.
         saved_binary = self._settings.get_string("whisper-local-binary-path")
-        if self._settings.get_user_value("whisper-local-binary-path") is None and not saved_binary:
-            detected = _detect_whisper_binary() or ""
-            if detected:
-                self._settings.set_string("whisper-local-binary-path", detected)
-            saved_binary = detected
+        needs_auto_detect = (
+            self._settings.get_user_value("whisper-local-binary-path") is None
+            and not saved_binary
+        )
         binary_path_entry = Adw.EntryRow(title="Binary path")
         binary_path_entry.set_text(saved_binary)
         binary_path_entry.connect("changed", lambda r: self._settings.set_string("whisper-local-binary-path", r.get_text()))
@@ -541,19 +548,35 @@ class CastwordPreferences(Adw.PreferencesWindow):
         model_path_entry.connect("changed", lambda r: self._settings.set_string("whisper-local-model-path", r.get_text()))
         whisper_local_group.add(model_path_entry)
 
-        # Detected models — clickable rows inside the same group
-        detected_models = _scan_whisper_models()
-        if detected_models:
-            whisper_local_group.set_description("Detected models — click to select:")
-            for model_path in detected_models:
-                row = Adw.ActionRow(
-                    title=os.path.basename(model_path),
-                    subtitle=os.path.dirname(model_path),
-                    activatable=True,
-                )
-                row.add_suffix(Gtk.Image(icon_name="go-next-symbolic", valign=Gtk.Align.CENTER))
-                row.connect("activated", lambda _r, p=model_path: model_path_entry.set_text(p))
-                whisper_local_group.add(row)
+        # Detect binary and scan for models off the main thread so the
+        # preferences window opens instantly even on slow filesystems.
+        def _detect_in_background():
+            detected_binary = _detect_whisper_binary() if needs_auto_detect else None
+            detected_models = _scan_whisper_models()
+
+            def _apply():
+                try:
+                    if detected_binary:
+                        self._settings.set_string("whisper-local-binary-path", detected_binary)
+                        binary_path_entry.set_text(detected_binary)
+                    if detected_models:
+                        whisper_local_group.set_description("Detected models — click to select:")
+                        for mp in detected_models:
+                            row = Adw.ActionRow(
+                                title=os.path.basename(mp),
+                                subtitle=os.path.dirname(mp),
+                                activatable=True,
+                            )
+                            row.add_suffix(Gtk.Image(icon_name="go-next-symbolic", valign=Gtk.Align.CENTER))
+                            row.connect("activated", lambda _r, p=mp: model_path_entry.set_text(p))
+                            whisper_local_group.add(row)
+                except Exception:
+                    pass
+                return GLib.SOURCE_REMOVE
+
+            GLib.idle_add(_apply)
+
+        threading.Thread(target=_detect_in_background, daemon=True).start()
 
         page.add(whisper_local_group)
 

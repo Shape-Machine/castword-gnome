@@ -10,15 +10,14 @@ class WhisperProvider(BaseSpeechProvider):
     """OpenAI Whisper cloud transcription."""
 
     def __init__(self, api_key: str, model: str = "whisper-1"):
-        self._api_key = api_key
+        self._client = AsyncOpenAI(api_key=api_key)
         self._model = model
 
     async def transcribe(self, audio_bytes: bytes) -> str:
         if not audio_bytes:
             return ""
         try:
-            client = AsyncOpenAI(api_key=self._api_key)
-            response = await client.audio.transcriptions.create(
+            response = await self._client.audio.transcriptions.create(
                 file=("audio.wav", io.BytesIO(audio_bytes), "audio/wav"),
                 model=self._model,
             )

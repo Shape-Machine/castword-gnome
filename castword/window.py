@@ -27,6 +27,14 @@ class CastwordWindow(Adw.ApplicationWindow):
         self._prefs_open: bool = False
         self._transcribing_count: int = 0
         self._recorder = None
+        self._provider = None       # cached LLM provider; invalidated on prefs close
+        self._stt_provider = None   # cached STT provider; invalidated on STT settings change
+
+        # Persistent event loop for all provider coroutines — avoids per-call
+        # loop creation overhead and enables HTTP connection reuse across requests.
+        self._loop = asyncio.new_event_loop()
+        self._loop_thread = threading.Thread(target=self._loop.run_forever, daemon=True)
+        self._loop_thread.start()
 
         # Serialized transcription queue — ensures chunks are appended in speech order
         self._transcribe_queue: queue.Queue = queue.Queue()
@@ -317,6 +325,11 @@ class CastwordWindow(Adw.ApplicationWindow):
         # Stop/start recorder when STT is toggled in preferences
         self._settings.connect("changed::stt-enabled", self._on_stt_enabled_changed)
 
+        # Invalidate STT provider cache when any of its config keys change
+        for key in ("active-stt-provider", "whisper-model",
+                    "whisper-local-model-path", "whisper-local-binary-path"):
+            self._settings.connect(f"changed::{key}", self._on_stt_settings_changed)
+
     # ------------------------------------------------------------------ #
     # Preferences
     # ------------------------------------------------------------------ #
@@ -336,8 +349,22 @@ class CastwordWindow(Adw.ApplicationWindow):
 
     def _on_preferences_closed(self, prefs):
         self._prefs_open = False
+        self._invalidate_provider()
         self._rebuild_tone_buttons()
         return False
+
+    def _invalidate_provider(self) -> None:
+        """Drop the cached LLM provider, scheduling aclose() on the event loop if needed."""
+        old = self._provider
+        self._provider = None
+        if old is not None:
+            aclose = getattr(old, "aclose", None)
+            if callable(aclose):
+                asyncio.run_coroutine_threadsafe(aclose(), self._loop)
+
+    def _on_stt_settings_changed(self, settings, key) -> None:
+        """Drop the STT provider cache when any of its config keys change."""
+        self._stt_provider = None
 
     def _prompt_shortcut_setup(self):
         from castword.shortcuts import find_castword_shortcut
@@ -437,21 +464,22 @@ class CastwordWindow(Adw.ApplicationWindow):
         if not text:
             return
 
-        # Build the provider on the main thread — GSettings and libsecret
-        # reads must not happen from a background thread.
-        try:
-            from castword.providers import make_provider
-            provider = make_provider(self._settings)
-        except Exception as exc:
-            self._show_banner(str(exc))
-            return
+        # Build the provider on the main thread (GSettings + libsecret must not
+        # be called from a background thread), then cache it for subsequent clicks.
+        if self._provider is None:
+            try:
+                from castword.providers import make_provider
+                self._provider = make_provider(self._settings)
+            except Exception as exc:
+                self._show_banner(str(exc))
+                return
 
         self._set_busy(True)
         self._hide_banner()
 
         threading.Thread(
             target=self._rewrite_thread,
-            args=(text, tone, provider),
+            args=(text, tone, self._provider),
             daemon=True,
         ).start()
 
@@ -460,16 +488,11 @@ class CastwordWindow(Adw.ApplicationWindow):
     # ------------------------------------------------------------------ #
 
     def _rewrite_thread(self, text: str, tone, provider):
-        async def _run():
-            try:
-                return await provider.rewrite(text, tone)
-            finally:
-                aclose = getattr(provider, "aclose", None)
-                if callable(aclose):
-                    await aclose()
-
         try:
-            result = asyncio.run(_run())
+            future = asyncio.run_coroutine_threadsafe(
+                provider.rewrite(text, tone), self._loop
+            )
+            result = future.result()
             GLib.idle_add(self._on_rewrite_done, text, result)
         except Exception as exc:
             GLib.idle_add(self._on_rewrite_error, str(exc))
@@ -606,16 +629,19 @@ class CastwordWindow(Adw.ApplicationWindow):
         if not self._settings.get_boolean("stt-enabled"):
             return
 
-        try:
-            from castword.providers import make_stt_provider
-            provider = make_stt_provider(self._settings)
-        except Exception as exc:
-            self._show_banner(str(exc))
-            return
+        # Build the STT provider lazily on the main thread (libsecret must not
+        # be called from a background thread), then cache it across chunks.
+        if self._stt_provider is None:
+            try:
+                from castword.providers import make_stt_provider
+                self._stt_provider = make_stt_provider(self._settings)
+            except Exception as exc:
+                self._show_banner(str(exc))
+                return
 
         self._transcribing_count += 1
         self._update_status_bar()
-        self._transcribe_queue.put((wav_bytes, provider))
+        self._transcribe_queue.put((wav_bytes, self._stt_provider))
 
     def _transcribe_worker_loop(self) -> None:
         """Single worker thread — processes chunks one at a time to preserve order."""
@@ -625,7 +651,10 @@ class CastwordWindow(Adw.ApplicationWindow):
                 break
             wav_bytes, provider = item
             try:
-                text = asyncio.run(provider.transcribe(wav_bytes))
+                future = asyncio.run_coroutine_threadsafe(
+                    provider.transcribe(wav_bytes), self._loop
+                )
+                text = future.result()
                 GLib.idle_add(self._on_transcription_done, text.strip() if text else None)
             except Exception as exc:
                 GLib.idle_add(self._on_transcription_error, str(exc))
