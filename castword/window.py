@@ -169,6 +169,21 @@ class CastwordWindow(Adw.ApplicationWindow):
         input_col.append(input_scroll)
         columns_box.append(input_col)
 
+        # Sidebar: vertical tone buttons (~110 px wide), between input and diff
+        self._tone_sidebar = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=6,
+        )
+        self._tone_sidebar.set_size_request(110, -1)
+        sidebar_scroll = Gtk.ScrolledWindow(
+            vexpand=True,
+            hscrollbar_policy=Gtk.PolicyType.NEVER,
+            vscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
+        )
+        sidebar_scroll.set_size_request(110, -1)
+        sidebar_scroll.set_child(self._tone_sidebar)
+        columns_box.append(sidebar_scroll)
+
         # Column 2: Diff (hidden pre-rewrite)
         self._diff_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4, hexpand=True, vexpand=True, visible=False)
         diff_lbl = Gtk.Label(label="Diff", xalign=0.0)
@@ -221,21 +236,6 @@ class CastwordWindow(Adw.ApplicationWindow):
         self._output_scroll.set_child(self._output_view)
         self._output_col.append(self._output_scroll)
         columns_box.append(self._output_col)
-
-        # Sidebar: vertical tone buttons (~110 px wide)
-        self._tone_sidebar = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL,
-            spacing=6,
-        )
-        self._tone_sidebar.set_size_request(110, -1)
-        sidebar_scroll = Gtk.ScrolledWindow(
-            vexpand=True,
-            hscrollbar_policy=Gtk.PolicyType.NEVER,
-            vscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
-        )
-        sidebar_scroll.set_size_request(110, -1)
-        sidebar_scroll.set_child(self._tone_sidebar)
-        columns_box.append(sidebar_scroll)
 
         self._tone_buttons: list[Gtk.Button] = []
         self._rebuild_tone_buttons()
