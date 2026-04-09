@@ -266,13 +266,24 @@ class CastwordWindow(Adw.ApplicationWindow):
         tag_table = self._diff_buffer.get_tag_table()
 
         added_tag = Gtk.TextTag(name="added")
-        added_tag.set_property("foreground", "#26a269")  # GNOME green
         tag_table.add(added_tag)
 
         removed_tag = Gtk.TextTag(name="removed")
-        removed_tag.set_property("foreground", "#c01c28")  # GNOME red
         removed_tag.set_property("strikethrough", True)
         tag_table.add(removed_tag)
+
+        self._update_diff_tag_colours()
+        Adw.StyleManager.get_default().connect("notify::dark", lambda *_: self._update_diff_tag_colours())
+
+    def _update_diff_tag_colours(self):
+        dark = Adw.StyleManager.get_default().get_dark()
+        tag_table = self._diff_buffer.get_tag_table()
+        tag_table.lookup("added").set_property(
+            "foreground", "#57e389" if dark else "#26a269"
+        )
+        tag_table.lookup("removed").set_property(
+            "foreground", "#ff7b63" if dark else "#c01c28"
+        )
 
     def _rebuild_tone_buttons(self):
         # Clear existing buttons
