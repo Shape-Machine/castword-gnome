@@ -259,6 +259,8 @@ class CastwordWindow(Adw.ApplicationWindow):
 
         self._tone_buttons: list[Gtk.Button] = []
         self._rebuild_tone_buttons()
+        # Sync placeholder visibility with initial buffer content
+        self._on_input_changed(self._input_buffer)
 
     def _setup_diff_tags(self):
         tag_table = self._diff_buffer.get_tag_table()
