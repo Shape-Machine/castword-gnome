@@ -173,7 +173,19 @@ class CastwordWindow(Adw.ApplicationWindow):
             accepts_tab=False,
         )
         self._input_buffer = self._input_view.get_buffer()
-        input_scroll.set_child(self._input_view)
+        self._input_placeholder = Gtk.Label(
+            label="Type or paste text, or speak…",
+            halign=Gtk.Align.START,
+            valign=Gtk.Align.START,
+            margin_start=12,
+            margin_top=12,
+            sensitive=False,
+        )
+        self._input_placeholder.add_css_class("dim-label")
+        input_overlay = Gtk.Overlay()
+        input_overlay.set_child(self._input_view)
+        input_overlay.add_overlay(self._input_placeholder)
+        input_scroll.set_child(input_overlay)
         input_col.append(input_scroll)
         columns_box.append(input_col)
 
@@ -457,9 +469,10 @@ class CastwordWindow(Adw.ApplicationWindow):
         self.set_visible(False)
 
     def _on_input_changed(self, buf):
-        # Hide diff and output columns when input is cleared
         start, end = buf.get_bounds()
-        if not buf.get_text(start, end, False).strip():
+        is_empty = not buf.get_text(start, end, False).strip()
+        self._input_placeholder.set_visible(is_empty)
+        if is_empty:
             self._diff_col.set_visible(False)
             self._output_col.set_visible(False)
             self._diff_buffer.set_text("")
@@ -469,6 +482,7 @@ class CastwordWindow(Adw.ApplicationWindow):
         start, end = self._input_buffer.get_bounds()
         text = self._input_buffer.get_text(start, end, False).strip()
         if not text:
+            self._toast_overlay.add_toast(Adw.Toast(title="Type or paste some text first", timeout=2))
             return
 
         # Build the provider on the main thread (GSettings + libsecret must not
@@ -742,7 +756,6 @@ class CastwordWindow(Adw.ApplicationWindow):
     def _show_banner(self, message: str):
         self._banner.set_title(message)
         self._banner.set_revealed(True)
-        GLib.timeout_add_seconds(5, self._hide_banner)
 
     def _hide_banner(self):
         self._banner.set_revealed(False)

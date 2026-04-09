@@ -24,13 +24,16 @@ class GeminiProvider(BaseProvider):
                 raise ProviderError(f"Gemini blocked the response (reason: {reason}).")
             return response.text.strip()
         except genai_errors.ClientError as e:
+            print(f"Gemini client error: {e}", flush=True)
             if "API_KEY_INVALID" in str(e) or "UNAUTHENTICATED" in str(e):
-                raise ProviderError(f"Gemini authentication failed: {e}") from e
-            raise ProviderError(f"Gemini client error: {e}") from e
+                raise ProviderError("Invalid Gemini API key — check Preferences → Providers.") from e
+            raise ProviderError("Gemini request failed — try again.") from e
         except genai_errors.ServerError as e:
-            raise ProviderError(f"Gemini server error: {e}") from e
+            print(f"Gemini server error: {e}", flush=True)
+            raise ProviderError("Gemini server error — try again in a moment.") from e
         except Exception as e:
-            raise ProviderError(f"Gemini error: {e}") from e
+            print(f"Gemini error: {e}", flush=True)
+            raise ProviderError("Gemini request failed — try again.") from e
 
     async def aclose(self) -> None:
         fn = getattr(self._client, "aclose", None) or getattr(self._client, "close", None)

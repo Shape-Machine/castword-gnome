@@ -24,7 +24,8 @@ class WhisperProvider(BaseSpeechProvider):
             text = response.text
             return "" if is_hallucination(text) else text
         except Exception as exc:
-            raise ProviderError(f"Whisper transcription failed: {exc}") from exc
+            print(f"Whisper transcription error: {exc}", flush=True)
+            raise ProviderError("Whisper transcription failed — check your API key and try again.") from exc
 
     async def aclose(self) -> None:
         await self._client.aclose()

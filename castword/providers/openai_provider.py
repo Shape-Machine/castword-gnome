@@ -23,13 +23,17 @@ class OpenAIProvider(BaseProvider):
                 raise ProviderError("OpenAI returned an empty response.")
             return result
         except openai.AuthenticationError as e:
-            raise ProviderError(f"OpenAI authentication failed: {e}") from e
+            print(f"OpenAI auth error: {e}", flush=True)
+            raise ProviderError("Invalid OpenAI API key — check Preferences → Providers.") from e
         except openai.RateLimitError as e:
-            raise ProviderError(f"OpenAI rate limit exceeded: {e}") from e
+            print(f"OpenAI rate limit: {e}", flush=True)
+            raise ProviderError("OpenAI rate limit reached — try again in a moment.") from e
         except openai.APIConnectionError as e:
-            raise ProviderError(f"Could not reach OpenAI: {e}") from e
+            print(f"OpenAI connection error: {e}", flush=True)
+            raise ProviderError("Could not reach OpenAI — check your internet connection.") from e
         except openai.OpenAIError as e:
-            raise ProviderError(f"OpenAI error: {e}") from e
+            print(f"OpenAI error: {e}", flush=True)
+            raise ProviderError("OpenAI request failed — try again.") from e
 
     async def aclose(self) -> None:
         await self._client.aclose()
