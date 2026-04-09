@@ -456,7 +456,10 @@ class CastwordWindow(Adw.ApplicationWindow):
         return False
 
     def _on_focus_out(self, ctrl):
-        if self._settings.get_boolean("dismiss-on-focus-out") and not self._busy and not self._prefs_open:
+        if (self._settings.get_boolean("dismiss-on-focus-out")
+                and not self._busy
+                and not self._transcribing_count
+                and not self._prefs_open):
             self._dismiss()
 
     def _dismiss(self):
@@ -591,12 +594,12 @@ class CastwordWindow(Adw.ApplicationWindow):
         if self._recorder.is_running():
             self._recorder.stop()
             self._set_mic_recording(False)
-            self._toast_overlay.add_toast(Adw.Toast(title="Mic paused", timeout=2))
+            self._toast_overlay.add_toast(Adw.Toast(title="Microphone paused", timeout=2))
         else:
             self._recorder.start()
             if self._recorder.is_running():
                 self._set_mic_recording(True)
-                self._toast_overlay.add_toast(Adw.Toast(title="Mic recording", timeout=2))
+                self._toast_overlay.add_toast(Adw.Toast(title="Microphone resumed", timeout=2))
 
     def _on_recording_toggle_clicked(self, _btn) -> None:
         self.toggle_mic()

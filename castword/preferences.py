@@ -48,7 +48,7 @@ _STT_PROVIDER_LABELS = ["OpenAI Whisper", "Local Whisper (whisper.cpp)"]
 class CastwordPreferences(Adw.PreferencesWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.set_title("castword Preferences")
+        self.set_title("Castword Preferences")
         self.set_default_size(640, 560)
 
         self._settings = Gio.Settings(schema_id="xyz.shapemachine.castword-gnome")
@@ -451,6 +451,13 @@ class CastwordPreferences(Adw.PreferencesWindow):
                             Gio.SettingsBindFlags.DEFAULT)
         dismiss_group.add(dismiss_row)
 
+        keep_row = Adw.SwitchRow(
+            title="Keep Text on Dismiss",
+            subtitle="Preserve input and diff when the overlay is closed",
+        )
+        self._settings.bind("keep-text-on-dismiss", keep_row, "active", Gio.SettingsBindFlags.DEFAULT)
+        dismiss_group.add(keep_row)
+
         shortcut_group = Adw.PreferencesGroup(title="Keyboard Shortcut")
         page.add(shortcut_group)
 
@@ -460,6 +467,11 @@ class CastwordPreferences(Adw.PreferencesWindow):
             title="Global Shortcut",
             subtitle=format_binding(binding),
         )
+        if binding is None:
+            setup_btn = Gtk.Button(label="Set Up", valign=Gtk.Align.CENTER)
+            setup_btn.add_css_class("suggested-action")
+            setup_btn.connect("clicked", self._on_setup_shortcut, shortcut_row)
+            shortcut_row.add_suffix(setup_btn)
         open_kb_btn = Gtk.Button(label="Open Keyboard Settings", valign=Gtk.Align.CENTER)
         open_kb_btn.add_css_class("flat")
         open_kb_btn.connect("clicked", self._on_open_keyboard_settings)
@@ -490,6 +502,16 @@ class CastwordPreferences(Adw.PreferencesWindow):
         except FileNotFoundError:
             pass
 
+    def _on_setup_shortcut(self, btn, shortcut_row):
+        window = self.get_transient_for()
+        if window is not None:
+            window._do_register_shortcut()
+        from castword.shortcuts import find_castword_shortcut, format_binding
+        _, binding = find_castword_shortcut()
+        shortcut_row.set_subtitle(format_binding(binding))
+        if binding is not None:
+            btn.set_visible(False)
+
     # ================================================================== #
     # Page 4 — Speech (STT stubs, Phase 2)
     # ================================================================== #
@@ -501,7 +523,7 @@ class CastwordPreferences(Adw.PreferencesWindow):
         enable_group = Adw.PreferencesGroup()
         enable_row = Adw.SwitchRow(
             title="Enable Speech-to-Text",
-            subtitle="Shows mic button in the main window (Phase 2 — transcription coming soon)",
+            subtitle="Record speech and transcribe it directly into the text field.",
         )
         self._settings.bind("stt-enabled", enable_row, "active", Gio.SettingsBindFlags.DEFAULT)
         enable_group.add(enable_row)
