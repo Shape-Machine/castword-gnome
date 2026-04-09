@@ -467,7 +467,7 @@ class CastwordPreferences(Adw.PreferencesWindow):
             title="Global Shortcut",
             subtitle=format_binding(binding),
         )
-        if binding is None:
+        if not binding:
             setup_btn = Gtk.Button(label="Set Up", valign=Gtk.Align.CENTER)
             setup_btn.add_css_class("suggested-action")
             setup_btn.connect("clicked", self._on_setup_shortcut, shortcut_row)
