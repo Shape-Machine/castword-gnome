@@ -23,16 +23,16 @@ class AnthropicProvider(BaseProvider):
                 raise ProviderError("Anthropic returned an empty response.")
             return text_block.text.strip()
         except anthropic.AuthenticationError as e:
-            print(f"Anthropic auth error: {e}", flush=True)
+            print(f"Anthropic auth error: {e}", file=__import__('sys').stderr, flush=True)
             raise ProviderError("Invalid Anthropic API key — check Preferences → Providers.") from e
         except anthropic.RateLimitError as e:
-            print(f"Anthropic rate limit: {e}", flush=True)
+            print(f"Anthropic rate limit: {e}", file=__import__('sys').stderr, flush=True)
             raise ProviderError("Anthropic rate limit reached — try again in a moment.") from e
         except anthropic.APIConnectionError as e:
-            print(f"Anthropic connection error: {e}", flush=True)
+            print(f"Anthropic connection error: {e}", file=__import__('sys').stderr, flush=True)
             raise ProviderError("Could not reach Anthropic — check your internet connection.") from e
         except anthropic.APIError as e:
-            print(f"Anthropic error: {e}", flush=True)
+            print(f"Anthropic error: {e}", file=__import__('sys').stderr, flush=True)
             raise ProviderError("Anthropic request failed — try again.") from e
 
     async def aclose(self) -> None:
