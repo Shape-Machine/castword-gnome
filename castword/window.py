@@ -19,6 +19,7 @@ class CastwordWindow(Adw.ApplicationWindow):
         self.set_title("Castword")
         self.set_default_size(980, 520)
         self.set_resizable(True)
+        self.set_size_request(480, 320)
 
         self._settings = Gio.Settings(schema_id="xyz.shapemachine.castword-gnome")
         self._migrate_settings()
@@ -144,6 +145,11 @@ class CastwordWindow(Adw.ApplicationWindow):
         outer.append(columns_box)
 
         # Column 1: Input (always visible)
+        input_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4, hexpand=True, vexpand=True)
+        input_lbl = Gtk.Label(label="Input", xalign=0.0)
+        input_lbl.add_css_class("caption")
+        input_lbl.add_css_class("dim-label")
+        input_col.append(input_lbl)
         input_scroll = Gtk.ScrolledWindow(
             hexpand=True,
             vexpand=True,
@@ -160,14 +166,19 @@ class CastwordWindow(Adw.ApplicationWindow):
         )
         self._input_buffer = self._input_view.get_buffer()
         input_scroll.set_child(self._input_view)
-        columns_box.append(input_scroll)
+        input_col.append(input_scroll)
+        columns_box.append(input_col)
 
         # Column 2: Diff (hidden pre-rewrite)
+        self._diff_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4, hexpand=True, vexpand=True, visible=False)
+        diff_lbl = Gtk.Label(label="Diff", xalign=0.0)
+        diff_lbl.add_css_class("caption")
+        diff_lbl.add_css_class("dim-label")
+        self._diff_col.append(diff_lbl)
         self._diff_scroll = Gtk.ScrolledWindow(
             hexpand=True,
             vexpand=True,
             hscrollbar_policy=Gtk.PolicyType.NEVER,
-            visible=False,
         )
         self._diff_scroll.add_css_class("card")
         self._diff_view = Gtk.TextView(
@@ -182,14 +193,19 @@ class CastwordWindow(Adw.ApplicationWindow):
         self._diff_buffer = self._diff_view.get_buffer()
         self._setup_diff_tags()
         self._diff_scroll.set_child(self._diff_view)
-        columns_box.append(self._diff_scroll)
+        self._diff_col.append(self._diff_scroll)
+        columns_box.append(self._diff_col)
 
         # Column 3: Output — clean rewritten text, read-only (hidden pre-rewrite)
+        self._output_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4, hexpand=True, vexpand=True, visible=False)
+        output_lbl = Gtk.Label(label="Output", xalign=0.0)
+        output_lbl.add_css_class("caption")
+        output_lbl.add_css_class("dim-label")
+        self._output_col.append(output_lbl)
         self._output_scroll = Gtk.ScrolledWindow(
             hexpand=True,
             vexpand=True,
             hscrollbar_policy=Gtk.PolicyType.NEVER,
-            visible=False,
         )
         self._output_scroll.add_css_class("card")
         self._output_view = Gtk.TextView(
@@ -203,7 +219,8 @@ class CastwordWindow(Adw.ApplicationWindow):
         )
         self._output_buffer = self._output_view.get_buffer()
         self._output_scroll.set_child(self._output_view)
-        columns_box.append(self._output_scroll)
+        self._output_col.append(self._output_scroll)
+        columns_box.append(self._output_col)
 
         # Sidebar: vertical tone buttons (~110 px wide)
         self._tone_sidebar = Gtk.Box(
@@ -395,8 +412,8 @@ class CastwordWindow(Adw.ApplicationWindow):
             self._input_buffer.set_text("")
             self._diff_buffer.set_text("")
             self._output_buffer.set_text("")
-            self._diff_scroll.set_visible(False)
-            self._output_scroll.set_visible(False)
+            self._diff_col.set_visible(False)
+            self._output_col.set_visible(False)
             self._hide_banner()
         self.set_visible(False)
 
@@ -404,8 +421,8 @@ class CastwordWindow(Adw.ApplicationWindow):
         # Hide diff and output columns when input is cleared
         start, end = buf.get_bounds()
         if not buf.get_text(start, end, False).strip():
-            self._diff_scroll.set_visible(False)
-            self._output_scroll.set_visible(False)
+            self._diff_col.set_visible(False)
+            self._output_col.set_visible(False)
             self._diff_buffer.set_text("")
             self._output_buffer.set_text("")
 
@@ -459,16 +476,18 @@ class CastwordWindow(Adw.ApplicationWindow):
 
         if mode == "replace":
             self._input_buffer.set_text(rewritten)
-            self._diff_scroll.set_visible(False)
-            self._output_scroll.set_visible(False)
+            self._diff_col.set_visible(False)
+            self._output_col.set_visible(False)
+            self._output_buffer.set_text("")
         elif mode == "clipboard":
-            self._diff_scroll.set_visible(False)
-            self._output_scroll.set_visible(False)
+            self._diff_col.set_visible(False)
+            self._output_col.set_visible(False)
+            self._output_buffer.set_text("")
         else:  # clipboard+diff (default)
             self._render_diff(original, rewritten)
             self._output_buffer.set_text(rewritten)
-            self._diff_scroll.set_visible(True)
-            self._output_scroll.set_visible(True)
+            self._diff_col.set_visible(True)
+            self._output_col.set_visible(True)
 
         self._set_busy(False)
         return GLib.SOURCE_REMOVE
