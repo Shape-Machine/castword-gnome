@@ -169,25 +169,20 @@ class CastwordWindow(Adw.ApplicationWindow):
         input_col.append(input_scroll)
         columns_box.append(input_col)
 
-        # Sidebar: vertical tone buttons (~110 px wide), between input and diff
-        sidebar_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        sidebar_col.set_size_request(110, -1)
-        sidebar_lbl = Gtk.Label(label="Tones", xalign=0.0)
-        sidebar_lbl.add_css_class("caption")
-        sidebar_lbl.add_css_class("dim-label")
-        sidebar_col.append(sidebar_lbl)
+        # Sidebar: vertical tone buttons, between input and diff
         self._tone_sidebar = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
             spacing=6,
+            valign=Gtk.Align.CENTER,
         )
         sidebar_scroll = Gtk.ScrolledWindow(
             vexpand=True,
             hscrollbar_policy=Gtk.PolicyType.NEVER,
             vscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
         )
+        sidebar_scroll.set_size_request(150, -1)
         sidebar_scroll.set_child(self._tone_sidebar)
-        sidebar_col.append(sidebar_scroll)
-        columns_box.append(sidebar_col)
+        columns_box.append(sidebar_scroll)
 
         # Column 2: Diff (hidden pre-rewrite)
         self._diff_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4, hexpand=True, vexpand=True, visible=False)
@@ -274,8 +269,6 @@ class CastwordWindow(Adw.ApplicationWindow):
             btn.add_css_class("pill")
             lbl = Gtk.Label(
                 label=tone.name,
-                ellipsize=Pango.EllipsizeMode.END,
-                max_width_chars=9,
             )
             btn.set_child(lbl)
             btn.set_tooltip_text(tone.name)
