@@ -30,3 +30,6 @@ class OpenAIProvider(BaseProvider):
             raise ProviderError(f"Could not reach OpenAI: {e}") from e
         except openai.OpenAIError as e:
             raise ProviderError(f"OpenAI error: {e}") from e
+
+    async def aclose(self) -> None:
+        await self._client.aclose()

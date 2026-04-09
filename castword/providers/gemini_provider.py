@@ -31,3 +31,10 @@ class GeminiProvider(BaseProvider):
             raise ProviderError(f"Gemini server error: {e}") from e
         except Exception as e:
             raise ProviderError(f"Gemini error: {e}") from e
+
+    async def aclose(self) -> None:
+        fn = getattr(self._client, "aclose", None) or getattr(self._client, "close", None)
+        if callable(fn):
+            result = fn()
+            if hasattr(result, "__await__"):
+                await result

@@ -30,3 +30,6 @@ class AnthropicProvider(BaseProvider):
             raise ProviderError(f"Could not reach Anthropic: {e}") from e
         except anthropic.APIError as e:
             raise ProviderError(f"Anthropic error: {e}") from e
+
+    async def aclose(self) -> None:
+        await self._client.aclose()

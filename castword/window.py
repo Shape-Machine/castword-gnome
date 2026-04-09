@@ -354,26 +354,20 @@ class CastwordWindow(Adw.ApplicationWindow):
         return False
 
     def _invalidate_provider(self) -> None:
-        """Drop the cached LLM provider, scheduling aclose() on the event loop if needed."""
-        old = self._provider
+        """Drop the cached LLM provider. aclose() is deferred to after any in-flight rewrite."""
         self._provider = None
-        if old is not None:
-            aclose = getattr(old, "aclose", None)
-            if callable(aclose):
-                future = asyncio.run_coroutine_threadsafe(aclose(), self._loop)
-                future.add_done_callback(
-                    lambda f: f.exception()  # consume exception so it isn't re-raised
-                )
 
     def _invalidate_stt_provider(self) -> None:
-        """Drop the cached STT provider, scheduling aclose() on the event loop if needed."""
-        old = self._stt_provider
+        """Drop the cached STT provider. aclose() is deferred to after any in-flight transcription."""
         self._stt_provider = None
-        if old is not None:
-            aclose = getattr(old, "aclose", None)
-            if callable(aclose):
-                future = asyncio.run_coroutine_threadsafe(aclose(), self._loop)
-                future.add_done_callback(lambda f: f.exception())
+
+    @staticmethod
+    def _close_provider_async(provider, loop: asyncio.AbstractEventLoop) -> None:
+        """Schedule aclose() on the event loop and consume any exception."""
+        aclose = getattr(provider, "aclose", None)
+        if callable(aclose):
+            future = asyncio.run_coroutine_threadsafe(aclose(), loop)
+            future.add_done_callback(lambda f: f.exception())
 
     def _on_stt_settings_changed(self, settings, key) -> None:
         """Drop the STT provider cache when any of its config keys change."""
@@ -509,6 +503,10 @@ class CastwordWindow(Adw.ApplicationWindow):
             GLib.idle_add(self._on_rewrite_done, text, result)
         except Exception as exc:
             GLib.idle_add(self._on_rewrite_error, str(exc))
+        finally:
+            # Close the provider only if it was invalidated while this rewrite was in flight.
+            if provider is not self._provider:
+                self._close_provider_async(provider, self._loop)
 
     def _on_rewrite_done(self, original: str, rewritten: str):
         mode = self._settings.get_string("output-mode")
@@ -673,6 +671,9 @@ class CastwordWindow(Adw.ApplicationWindow):
                 GLib.idle_add(self._on_transcription_error, str(exc))
             finally:
                 self._transcribe_queue.task_done()
+                # Close the provider only if it was invalidated while this chunk was in flight.
+                if provider is not self._stt_provider:
+                    self._close_provider_async(provider, self._loop)
 
     def _on_transcription_done(self, text: str | None):
         self._transcribing_count = max(0, self._transcribing_count - 1)
