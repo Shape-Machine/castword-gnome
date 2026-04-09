@@ -34,9 +34,11 @@ class OllamaProvider(BaseProvider):
                 f"Ollama request timed out. The model '{self._model}' may still be loading."
             )
         except httpx.HTTPStatusError as e:
-            raise ProviderError(f"Ollama returned an error: {e.response.status_code} {e.response.text}") from e
+            print(f"Ollama HTTP error: {e.response.status_code} {e.response.text}", flush=True)
+            raise ProviderError(f"Ollama returned HTTP {e.response.status_code} — check the model name and try again.") from e
         except (KeyError, ValueError) as e:
-            raise ProviderError(f"Unexpected response from Ollama: {e}") from e
+            print(f"Ollama response parse error: {e}", flush=True)
+            raise ProviderError("Unexpected response from Ollama — try again.") from e
 
     async def aclose(self) -> None:
         await self._client.aclose()

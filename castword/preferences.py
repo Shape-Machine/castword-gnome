@@ -164,6 +164,20 @@ class CastwordPreferences(Adw.PreferencesWindow):
 
     def _on_delete_tone(self, btn, index: int):
         tones = tones_from_settings(self._settings)
+        dialog = Adw.AlertDialog(
+            heading="Delete tone?",
+            body=f"\"{tones[index].name}\" will be permanently removed.",
+        )
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("delete", "Delete")
+        dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.connect("response", self._on_delete_tone_confirmed, index)
+        dialog.present(self)
+
+    def _on_delete_tone_confirmed(self, dialog, response: str, index: int):
+        if response != "delete":
+            return
+        tones = tones_from_settings(self._settings)
         tones.pop(index)
         self._save_tones(tones)
 
@@ -363,16 +377,18 @@ class CastwordPreferences(Adw.PreferencesWindow):
         try:
             provider = make_provider(self._settings, provider_id=provider_id)
         except Exception as exc:
-            self._on_test_done(btn, False, str(exc))
+            self._on_test_done(btn, False, str(exc), btn.get_label())
             return
+        original_label = btn.get_label()
+        btn.set_label("Testing…")
         btn.set_sensitive(False)
         threading.Thread(
             target=self._test_thread,
-            args=(btn, provider),
+            args=(btn, provider, original_label),
             daemon=True,
         ).start()
 
-    def _test_thread(self, btn, provider):
+    def _test_thread(self, btn, provider, original_label: str):
         try:
             test_tone = Tone(
                 name="test",
@@ -388,12 +404,14 @@ class CastwordPreferences(Adw.PreferencesWindow):
                         await aclose()
 
             asyncio.run(_run())
-            GLib.idle_add(self._on_test_done, btn, True, "Connection successful")
+            GLib.idle_add(self._on_test_done, btn, True, "Connection successful", original_label)
         except Exception as exc:
-            GLib.idle_add(self._on_test_done, btn, False, str(exc))
+            GLib.idle_add(self._on_test_done, btn, False, str(exc), original_label)
 
-    def _on_test_done(self, btn, success: bool, message: str):
+    def _on_test_done(self, btn, success: bool, message: str, original_label: str = ""):
         btn.set_sensitive(True)
+        if original_label:
+            btn.set_label(original_label)
         toast = Adw.Toast(
             title=("✓ " if success else "✗ ") + message,
             timeout=4,
@@ -456,12 +474,10 @@ class CastwordPreferences(Adw.PreferencesWindow):
             entry.set_text(path)
         else:
             entry.set_text("")
-            # Brief visual feedback via the entry's error state
-            entry.add_css_class("error")
-            def _clear_error(e=entry):
-                e.remove_css_class("error")
-                return GLib.SOURCE_REMOVE
-            GLib.timeout_add(1500, _clear_error)
+            self.add_toast(Adw.Toast(
+                title="whisper.cpp not found — install it or set the path manually",
+                timeout=5,
+            ))
 
     def _on_open_keyboard_settings(self, btn):
         import subprocess
@@ -616,16 +632,18 @@ class CastwordPreferences(Adw.PreferencesWindow):
         try:
             provider = make_stt_provider(self._settings)
         except Exception as exc:
-            self._on_stt_test_done(btn, False, str(exc))
+            self._on_stt_test_done(btn, False, str(exc), btn.get_label())
             return
+        original_label = btn.get_label()
+        btn.set_label("Testing…")
         btn.set_sensitive(False)
         threading.Thread(
             target=self._test_stt_thread,
-            args=(btn, provider),
+            args=(btn, provider, original_label),
             daemon=True,
         ).start()
 
-    def _test_stt_thread(self, btn, provider):
+    def _test_stt_thread(self, btn, provider, original_label: str):
         import asyncio
         import io
         import wave
@@ -641,12 +659,14 @@ class CastwordPreferences(Adw.PreferencesWindow):
 
         try:
             asyncio.run(provider.transcribe(silent_wav))
-            GLib.idle_add(self._on_stt_test_done, btn, True, "Connection successful")
+            GLib.idle_add(self._on_stt_test_done, btn, True, "Connection successful", original_label)
         except Exception as exc:
-            GLib.idle_add(self._on_stt_test_done, btn, False, str(exc))
+            GLib.idle_add(self._on_stt_test_done, btn, False, str(exc), original_label)
 
-    def _on_stt_test_done(self, btn, success: bool, message: str):
+    def _on_stt_test_done(self, btn, success: bool, message: str, original_label: str = ""):
         btn.set_sensitive(True)
+        if original_label:
+            btn.set_label(original_label)
         toast = Adw.Toast(title=("✓ " if success else "✗ ") + message, timeout=4)
         self.add_toast(toast)
         return GLib.SOURCE_REMOVE
