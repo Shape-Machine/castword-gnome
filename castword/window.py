@@ -698,7 +698,7 @@ class CastwordWindow(Adw.ApplicationWindow):
         self._transcribing_count = max(0, self._transcribing_count - 1)
         self._update_status_bar()
 
-        if text:
+        if text and (self.get_visible() or self._settings.get_boolean("keep-text-on-dismiss")):
             buf = self._input_buffer
             existing = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
             sep = " " if existing.strip() else ""
