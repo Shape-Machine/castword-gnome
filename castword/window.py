@@ -360,11 +360,24 @@ class CastwordWindow(Adw.ApplicationWindow):
         if old is not None:
             aclose = getattr(old, "aclose", None)
             if callable(aclose):
-                asyncio.run_coroutine_threadsafe(aclose(), self._loop)
+                future = asyncio.run_coroutine_threadsafe(aclose(), self._loop)
+                future.add_done_callback(
+                    lambda f: f.exception()  # consume exception so it isn't re-raised
+                )
+
+    def _invalidate_stt_provider(self) -> None:
+        """Drop the cached STT provider, scheduling aclose() on the event loop if needed."""
+        old = self._stt_provider
+        self._stt_provider = None
+        if old is not None:
+            aclose = getattr(old, "aclose", None)
+            if callable(aclose):
+                future = asyncio.run_coroutine_threadsafe(aclose(), self._loop)
+                future.add_done_callback(lambda f: f.exception())
 
     def _on_stt_settings_changed(self, settings, key) -> None:
         """Drop the STT provider cache when any of its config keys change."""
-        self._stt_provider = None
+        self._invalidate_stt_provider()
 
     def _prompt_shortcut_setup(self):
         from castword.shortcuts import find_castword_shortcut

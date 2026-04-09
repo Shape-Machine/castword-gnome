@@ -11,6 +11,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gio, Gtk
 
+from castword import key_scout
 from castword.providers.base import Tone
 from castword.tones import default_tones, tones_from_settings
 
@@ -269,7 +270,6 @@ class CastwordPreferences(Adw.PreferencesWindow):
         self._model_entries: dict[str, Adw.EntryRow] = {}
 
         # Scan shell configs once so key_scout.scan() is not called per-provider
-        from castword import key_scout
         try:
             discovered = key_scout.scan()
         except Exception:
