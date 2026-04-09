@@ -52,6 +52,8 @@ class CastwordPreferences(Adw.PreferencesWindow):
         self.set_default_size(640, 560)
 
         self._settings = Gio.Settings(schema_id="xyz.shapemachine.castword-gnome")
+        self._closed = False
+        self.connect("close-request", lambda _: setattr(self, "_closed", True) or False)
         self._build_ui()
 
     # ------------------------------------------------------------------ #
@@ -409,6 +411,8 @@ class CastwordPreferences(Adw.PreferencesWindow):
             GLib.idle_add(self._on_test_done, btn, False, str(exc), original_label)
 
     def _on_test_done(self, btn, success: bool, message: str, original_label: str = ""):
+        if self._closed:
+            return GLib.SOURCE_REMOVE
         btn.set_sensitive(True)
         if original_label:
             btn.set_label(original_label)
@@ -664,6 +668,8 @@ class CastwordPreferences(Adw.PreferencesWindow):
             GLib.idle_add(self._on_stt_test_done, btn, False, str(exc), original_label)
 
     def _on_stt_test_done(self, btn, success: bool, message: str, original_label: str = ""):
+        if self._closed:
+            return GLib.SOURCE_REMOVE
         btn.set_sensitive(True)
         if original_label:
             btn.set_label(original_label)
