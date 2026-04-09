@@ -6,7 +6,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gdk, GLib, Gio, Gtk
+from gi.repository import Adw, Gdk, GLib, Gio, Gtk, Pango
 
 from castword.audio import AudioRecorder
 from castword.diff import word_diff
@@ -17,8 +17,8 @@ class CastwordWindow(Adw.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.set_title("Castword")
-        self.set_default_size(680, -1)
-        self.set_resizable(False)
+        self.set_default_size(980, 520)
+        self.set_resizable(True)
 
         self._settings = Gio.Settings(schema_id="xyz.shapemachine.castword-gnome")
         self._migrate_settings()
@@ -83,57 +83,24 @@ class CastwordWindow(Adw.ApplicationWindow):
 
         toolbar_view.add_top_bar(header_bar)
 
-        outer = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL,
-            spacing=0,
-        )
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         toolbar_view.set_content(outer)
 
-        # ── Error banner ──────────────────────────────────────────────
+        # ── Error banner (full width) ─────────────────────────────────
         self._banner = Adw.Banner(title="", revealed=False)
         outer.append(self._banner)
 
-        # ── Main content area ─────────────────────────────────────────
-        content = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL,
-            spacing=12,
-            margin_top=16,
-            margin_bottom=16,
-            margin_start=16,
-            margin_end=16,
-        )
-        outer.append(content)
-
-        # ── Input text view ───────────────────────────────────────────
-        input_scroll = Gtk.ScrolledWindow(
-            min_content_height=120,
-            max_content_height=300,
-            vexpand=False,
-            hscrollbar_policy=Gtk.PolicyType.NEVER,
-        )
-        input_scroll.add_css_class("card")
-
-        self._input_view = Gtk.TextView(
-            wrap_mode=Gtk.WrapMode.WORD_CHAR,
-            top_margin=10,
-            bottom_margin=10,
-            left_margin=10,
-            right_margin=10,
-            accepts_tab=False,
-        )
-        self._input_buffer = self._input_view.get_buffer()
-        input_scroll.set_child(self._input_view)
-        content.append(input_scroll)
-
-        # ── Status bar (rewrite + STT states) ────────────────────────────
+        # ── Mic / status bar (full width, above columns) ──────────────
         self._status_bar = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
             spacing=8,
             visible=False,
+            margin_start=12,
+            margin_end=12,
+            margin_top=8,
         )
         self._status_bar.add_css_class("card")
 
-        # Left: stack that switches between an icon and a spinner
         self._status_icon_stack = Gtk.Stack()
         self._status_icon_stack.set_margin_start(10)
         self._status_icon_stack.set_margin_top(8)
@@ -162,30 +129,47 @@ class CastwordWindow(Adw.ApplicationWindow):
         self._status_bar.append(self._recording_toggle_btn)
 
         self._set_mic_recording(False)  # initialise to paused visual state
-        content.append(self._status_bar)
+        outer.append(self._status_bar)
 
-        # ── Tone buttons row ──────────────────────────────────────────
-        tone_scroll = Gtk.ScrolledWindow(
-            vscrollbar_policy=Gtk.PolicyType.NEVER,
-            hscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
+        # ── Three-column content area ─────────────────────────────────
+        columns_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=8,
+            margin_top=12,
+            margin_bottom=12,
+            margin_start=12,
+            margin_end=12,
+            vexpand=True,
         )
-        self._tone_box = Gtk.Box(spacing=8)
-        tone_scroll.set_child(self._tone_box)
-        content.append(tone_scroll)
+        outer.append(columns_box)
 
-        self._tone_buttons: list[Gtk.Button] = []
-        self._rebuild_tone_buttons()
+        # Column 1: Input (always visible)
+        input_scroll = Gtk.ScrolledWindow(
+            hexpand=True,
+            vexpand=True,
+            hscrollbar_policy=Gtk.PolicyType.NEVER,
+        )
+        input_scroll.add_css_class("card")
+        self._input_view = Gtk.TextView(
+            wrap_mode=Gtk.WrapMode.WORD_CHAR,
+            top_margin=10,
+            bottom_margin=10,
+            left_margin=10,
+            right_margin=10,
+            accepts_tab=False,
+        )
+        self._input_buffer = self._input_view.get_buffer()
+        input_scroll.set_child(self._input_view)
+        columns_box.append(input_scroll)
 
-        # ── Diff panel ────────────────────────────────────────────────
+        # Column 2: Diff (hidden pre-rewrite)
         self._diff_scroll = Gtk.ScrolledWindow(
-            min_content_height=80,
-            max_content_height=300,
-            vexpand=False,
+            hexpand=True,
+            vexpand=True,
             hscrollbar_policy=Gtk.PolicyType.NEVER,
             visible=False,
         )
         self._diff_scroll.add_css_class("card")
-
         self._diff_view = Gtk.TextView(
             editable=False,
             cursor_visible=False,
@@ -198,7 +182,39 @@ class CastwordWindow(Adw.ApplicationWindow):
         self._diff_buffer = self._diff_view.get_buffer()
         self._setup_diff_tags()
         self._diff_scroll.set_child(self._diff_view)
-        content.append(self._diff_scroll)
+        columns_box.append(self._diff_scroll)
+
+        # Column 3: Output — clean rewritten text, read-only (hidden pre-rewrite)
+        self._output_scroll = Gtk.ScrolledWindow(
+            hexpand=True,
+            vexpand=True,
+            hscrollbar_policy=Gtk.PolicyType.NEVER,
+            visible=False,
+        )
+        self._output_scroll.add_css_class("card")
+        self._output_view = Gtk.TextView(
+            editable=False,
+            cursor_visible=False,
+            wrap_mode=Gtk.WrapMode.WORD_CHAR,
+            top_margin=10,
+            bottom_margin=10,
+            left_margin=10,
+            right_margin=10,
+        )
+        self._output_buffer = self._output_view.get_buffer()
+        self._output_scroll.set_child(self._output_view)
+        columns_box.append(self._output_scroll)
+
+        # Sidebar: vertical tone buttons (~110 px wide)
+        self._tone_sidebar = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=6,
+        )
+        self._tone_sidebar.set_size_request(110, -1)
+        columns_box.append(self._tone_sidebar)
+
+        self._tone_buttons: list[Gtk.Button] = []
+        self._rebuild_tone_buttons()
 
     def _setup_diff_tags(self):
         tag_table = self._diff_buffer.get_tag_table()
@@ -215,22 +231,38 @@ class CastwordWindow(Adw.ApplicationWindow):
     def _rebuild_tone_buttons(self):
         # Clear existing buttons
         while True:
-            child = self._tone_box.get_first_child()
+            child = self._tone_sidebar.get_first_child()
             if child is None:
                 break
-            self._tone_box.remove(child)
+            self._tone_sidebar.remove(child)
         self._tone_buttons.clear()
 
         tones = tones_from_settings(self._settings)
         for tone in tones:
             if not tone.enabled:
                 continue
-            btn = Gtk.Button(label=tone.name)
+            btn = Gtk.Button()
             btn.add_css_class("pill")
+            lbl = Gtk.Label(
+                label=tone.name,
+                ellipsize=Pango.EllipsizeMode.END,
+                max_width_chars=9,
+            )
+            btn.set_child(lbl)
             btn.set_tooltip_text(tone.system_prompt[:80] + "…")
             btn.connect("clicked", self._on_tone_clicked, tone)
-            self._tone_box.append(btn)
+            self._tone_sidebar.append(btn)
             self._tone_buttons.append(btn)
+
+        if not self._tone_buttons:
+            placeholder = Gtk.Label(
+                label="No tones enabled — add them in Preferences → Tones",
+                wrap=True,
+                xalign=0.0,
+            )
+            placeholder.add_css_class("dim-label")
+            placeholder.add_css_class("caption")
+            self._tone_sidebar.append(placeholder)
 
     # ------------------------------------------------------------------ #
     # Signal connections
@@ -362,16 +394,20 @@ class CastwordWindow(Adw.ApplicationWindow):
         if not self._settings.get_boolean("keep-text-on-dismiss"):
             self._input_buffer.set_text("")
             self._diff_buffer.set_text("")
+            self._output_buffer.set_text("")
             self._diff_scroll.set_visible(False)
+            self._output_scroll.set_visible(False)
             self._hide_banner()
         self.set_visible(False)
 
     def _on_input_changed(self, buf):
-        # Hide diff panel when input is cleared
+        # Hide diff and output columns when input is cleared
         start, end = buf.get_bounds()
         if not buf.get_text(start, end, False).strip():
             self._diff_scroll.set_visible(False)
+            self._output_scroll.set_visible(False)
             self._diff_buffer.set_text("")
+            self._output_buffer.set_text("")
 
     def _on_tone_clicked(self, btn, tone):
         start, end = self._input_buffer.get_bounds()
@@ -424,11 +460,15 @@ class CastwordWindow(Adw.ApplicationWindow):
         if mode == "replace":
             self._input_buffer.set_text(rewritten)
             self._diff_scroll.set_visible(False)
+            self._output_scroll.set_visible(False)
         elif mode == "clipboard":
             self._diff_scroll.set_visible(False)
+            self._output_scroll.set_visible(False)
         else:  # clipboard+diff (default)
             self._render_diff(original, rewritten)
+            self._output_buffer.set_text(rewritten)
             self._diff_scroll.set_visible(True)
+            self._output_scroll.set_visible(True)
 
         self._set_busy(False)
         return GLib.SOURCE_REMOVE
