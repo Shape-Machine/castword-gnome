@@ -25,3 +25,6 @@ class WhisperProvider(BaseSpeechProvider):
             return "" if is_hallucination(text) else text
         except Exception as exc:
             raise ProviderError(f"Whisper transcription failed: {exc}") from exc
+
+    async def aclose(self) -> None:
+        await self._client.aclose()
