@@ -228,7 +228,14 @@ class CastwordWindow(Adw.ApplicationWindow):
             spacing=6,
         )
         self._tone_sidebar.set_size_request(110, -1)
-        columns_box.append(self._tone_sidebar)
+        sidebar_scroll = Gtk.ScrolledWindow(
+            vexpand=True,
+            hscrollbar_policy=Gtk.PolicyType.NEVER,
+            vscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
+        )
+        sidebar_scroll.set_size_request(110, -1)
+        sidebar_scroll.set_child(self._tone_sidebar)
+        columns_box.append(sidebar_scroll)
 
         self._tone_buttons: list[Gtk.Button] = []
         self._rebuild_tone_buttons()
@@ -266,7 +273,7 @@ class CastwordWindow(Adw.ApplicationWindow):
                 max_width_chars=9,
             )
             btn.set_child(lbl)
-            btn.set_tooltip_text(tone.system_prompt[:80] + "…")
+            btn.set_tooltip_text(tone.name)
             btn.connect("clicked", self._on_tone_clicked, tone)
             self._tone_sidebar.append(btn)
             self._tone_buttons.append(btn)
