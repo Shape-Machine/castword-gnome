@@ -75,6 +75,12 @@
       <description>Set to true after the first-run shortcut prompt is shown, so it is never repeated.</description>
     </key>
 
+    <key name="autostart-prompted" type="b">
+      <default>false</default>
+      <summary>Whether the launch-at-login prompt has been shown</summary>
+      <description>Set to true after the autostart prompt is shown, so it is never repeated. Existing users who upgrade see the prompt once even if shortcut-prompted is already true.</description>
+    </key>
+
     <!-- STT (Phase 2) — API keys stored in libsecret, not here -->
     <key name="stt-enabled" type="b">
       <default>false</default>
