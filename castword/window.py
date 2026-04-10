@@ -56,7 +56,11 @@ class CastwordWindow(Adw.ApplicationWindow):
         self.connect("show", self._on_window_shown)
         self.connect("hide", self._on_window_hidden)
 
-        if not self._settings.get_boolean("shortcut-prompted"):
+        from castword.autostart import is_autostart_enabled
+        needs_shortcut_prompt = not self._settings.get_boolean("shortcut-prompted")
+        needs_autostart_prompt = (not self._settings.get_boolean("autostart-prompted")
+                                  and not is_autostart_enabled())
+        if needs_shortcut_prompt or needs_autostart_prompt:
             self._prefs_open = True  # block focus-out dismiss while prompt is pending
             GLib.idle_add(self._prompt_shortcut_setup)
 
@@ -400,14 +404,20 @@ class CastwordWindow(Adw.ApplicationWindow):
 
     def _prompt_shortcut_setup(self):
         from castword.shortcuts import find_castword_shortcut
-        self._settings.set_boolean("shortcut-prompted", True)
-        _, binding = find_castword_shortcut()
-        if binding is not None:
-            self._prefs_open = False  # no dialog needed, unblock focus-out dismiss
-            self._maybe_start_recorder()
-            return GLib.SOURCE_REMOVE  # already configured
+        from castword.autostart import is_autostart_enabled
 
-        self._prefs_open = True
+        self._settings.set_boolean("shortcut-prompted", True)
+        self._settings.set_boolean("autostart-prompted", True)
+
+        _, binding = find_castword_shortcut()
+        shortcut_needed = binding is None
+        autostart_needed = not is_autostart_enabled()
+
+        if not shortcut_needed and not autostart_needed:
+            self._prefs_open = False
+            self._maybe_start_recorder()
+            return GLib.SOURCE_REMOVE
+
         dialog = Adw.AlertDialog(
             heading="Set up castword",
             body="You can change these any time in Preferences.",
@@ -415,18 +425,19 @@ class CastwordWindow(Adw.ApplicationWindow):
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         box.set_margin_top(8)
-        shortcut_check = Gtk.CheckButton(
-            label="Register Super+Shift+W global shortcut",
-            active=True,
-        )
-        autostart_check = Gtk.CheckButton(
-            label="Launch at login",
-            active=True,
-        )
-        box.append(shortcut_check)
-        box.append(autostart_check)
-        dialog.set_extra_child(box)
 
+        shortcut_check = None
+        if shortcut_needed:
+            shortcut_check = Gtk.CheckButton(
+                label="Register Super+Shift+W global shortcut",
+                active=True,
+            )
+            box.append(shortcut_check)
+
+        autostart_check = Gtk.CheckButton(label="Launch at login", active=True)
+        box.append(autostart_check)
+
+        dialog.set_extra_child(box)
         dialog.add_response("skip", "Not Now")
         dialog.add_response("setup", "Set Up")
         dialog.set_response_appearance("setup", Adw.ResponseAppearance.SUGGESTED)
@@ -442,7 +453,7 @@ class CastwordWindow(Adw.ApplicationWindow):
         if autostart_check.get_active():
             from castword.autostart import set_autostart_enabled
             set_autostart_enabled(True)
-        if shortcut_check.get_active():
+        if shortcut_check is not None and shortcut_check.get_active():
             from castword.shortcuts import find_conflicting_shortcut, format_binding, DEFAULT_BINDING
             conflict_path, conflict_name = find_conflicting_shortcut(DEFAULT_BINDING)
             if conflict_path:
