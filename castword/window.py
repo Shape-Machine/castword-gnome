@@ -434,8 +434,10 @@ class CastwordWindow(Adw.ApplicationWindow):
             )
             box.append(shortcut_check)
 
-        autostart_check = Gtk.CheckButton(label="Launch at login", active=True)
-        box.append(autostart_check)
+        autostart_check = None
+        if autostart_needed:
+            autostart_check = Gtk.CheckButton(label="Launch at login", active=True)
+            box.append(autostart_check)
 
         dialog.set_extra_child(box)
         dialog.add_response("skip", "Not Now")
@@ -450,7 +452,7 @@ class CastwordWindow(Adw.ApplicationWindow):
         self._prefs_open = False
         if response != "setup":
             return
-        if autostart_check.get_active():
+        if autostart_check is not None and autostart_check.get_active():
             from castword.autostart import set_autostart_enabled
             set_autostart_enabled(True)
         if shortcut_check is not None and shortcut_check.get_active():
