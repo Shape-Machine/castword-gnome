@@ -454,7 +454,10 @@ class CastwordWindow(Adw.ApplicationWindow):
             return
         if autostart_check is not None and autostart_check.get_active():
             from castword.autostart import set_autostart_enabled
-            set_autostart_enabled(True)
+            try:
+                set_autostart_enabled(True)
+            except OSError as e:
+                self._show_banner(f"Could not enable autostart: {e}")
         if shortcut_check is not None and shortcut_check.get_active():
             from castword.shortcuts import find_conflicting_shortcut, format_binding, DEFAULT_BINDING
             conflict_path, conflict_name = find_conflicting_shortcut(DEFAULT_BINDING)
