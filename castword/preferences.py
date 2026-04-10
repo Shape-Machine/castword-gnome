@@ -503,8 +503,19 @@ class CastwordPreferences(Adw.PreferencesWindow):
             subtitle="Start castword automatically when you log in",
             active=is_autostart_enabled(),
         )
-        autostart_row.connect("notify::active",
-                              lambda row, _: set_autostart_enabled(row.get_active()))
+
+        handler_id_ref = [None]
+
+        def _on_autostart_toggled(row, _param):
+            try:
+                set_autostart_enabled(row.get_active())
+            except OSError as e:
+                row.handler_block(handler_id_ref[0])
+                row.set_active(not row.get_active())
+                row.handler_unblock(handler_id_ref[0])
+                self.add_toast(Adw.Toast(title=f"Could not update autostart: {e}", timeout=4))
+
+        handler_id_ref[0] = autostart_row.connect("notify::active", _on_autostart_toggled)
         startup_group.add(autostart_row)
 
         return page
