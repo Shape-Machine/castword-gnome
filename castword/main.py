@@ -12,20 +12,25 @@ class CastwordApplication(Adw.Application):
         self.connect("activate", self._on_activate)
         self.set_resource_base_path("/xyz/shapemachine/castword-gnome")
         self._window = None
+        # Captured once at startup; cleared after the first activation so
+        # subsequent D-Bus activations (keyboard shortcut) create the window.
+        self._background_start = "--background" in sys.argv
 
     def _on_activate(self, app):
-        from castword.window import CastwordWindow
-
         if self._window is None:
+            if self._background_start:
+                # Stay resident without creating the window or showing any
+                # first-run dialogs. The next D-Bus activation (keyboard
+                # shortcut) will create the window and present it normally.
+                self._background_start = False
+                self.hold()
+                return
+
+            from castword.window import CastwordWindow
             self._window = CastwordWindow(application=self)
             # Keep the process resident after the window is hidden so
             # D-Bus re-activation can re-present it instantly.
             self.hold()
-            # When started with --background (e.g. XDG autostart at login),
-            # stay resident but don't show the window — wait for the first
-            # keyboard-shortcut / D-Bus activation to present it.
-            if "--background" in sys.argv:
-                return
 
         if self._window.get_visible():
             self._window.toggle_mic()
