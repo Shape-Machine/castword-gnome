@@ -21,6 +21,11 @@ class CastwordApplication(Adw.Application):
             # Keep the process resident after the window is hidden so
             # D-Bus re-activation can re-present it instantly.
             self.hold()
+            # When started with --background (e.g. XDG autostart at login),
+            # stay resident but don't show the window — wait for the first
+            # keyboard-shortcut / D-Bus activation to present it.
+            if "--background" in sys.argv:
+                return
 
         if self._window.get_visible():
             self._window.toggle_mic()

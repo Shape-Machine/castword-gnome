@@ -409,8 +409,8 @@ class CastwordWindow(Adw.ApplicationWindow):
 
         self._prefs_open = True
         dialog = Adw.AlertDialog(
-            heading="Set up keyboard shortcut?",
-            body="Register Super+Shift+W to open castword from anywhere.",
+            heading="Set up castword",
+            body="Register Super+Shift+W to open castword from anywhere, and start it automatically when you log in.",
         )
         dialog.add_response("skip", "Not Now")
         dialog.add_response("setup", "Set Up")
@@ -425,6 +425,8 @@ class CastwordWindow(Adw.ApplicationWindow):
         if response != "setup":
             return
         from castword.shortcuts import find_conflicting_shortcut, format_binding, DEFAULT_BINDING
+        from castword.autostart import set_autostart_enabled
+        set_autostart_enabled(True)
         conflict_path, conflict_name = find_conflicting_shortcut(DEFAULT_BINDING)
         if conflict_path:
             self._show_shortcut_conflict_dialog(conflict_path, conflict_name, format_binding(DEFAULT_BINDING))
