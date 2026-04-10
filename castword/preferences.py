@@ -494,6 +494,19 @@ class CastwordPreferences(Adw.PreferencesWindow):
         shortcut_row.add_suffix(open_kb_btn)
         shortcut_group.add(shortcut_row)
 
+        startup_group = Adw.PreferencesGroup(title="Startup")
+        page.add(startup_group)
+
+        from castword.autostart import is_autostart_enabled, set_autostart_enabled
+        autostart_row = Adw.SwitchRow(
+            title="Launch at Login",
+            subtitle="Start castword automatically when you log in",
+            active=is_autostart_enabled(),
+        )
+        autostart_row.connect("notify::active",
+                              lambda row, _: set_autostart_enabled(row.get_active()))
+        startup_group.add(autostart_row)
+
         return page
 
     def _on_output_mode_changed(self, combo, _param):
