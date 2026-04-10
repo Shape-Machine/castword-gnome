@@ -410,28 +410,45 @@ class CastwordWindow(Adw.ApplicationWindow):
         self._prefs_open = True
         dialog = Adw.AlertDialog(
             heading="Set up castword",
-            body="Register Super+Shift+W to open castword from anywhere, and start it automatically when you log in.",
+            body="You can change these any time in Preferences.",
         )
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        box.set_margin_top(8)
+        shortcut_check = Gtk.CheckButton(
+            label="Register Super+Shift+W global shortcut",
+            active=True,
+        )
+        autostart_check = Gtk.CheckButton(
+            label="Launch at login",
+            active=True,
+        )
+        box.append(shortcut_check)
+        box.append(autostart_check)
+        dialog.set_extra_child(box)
+
         dialog.add_response("skip", "Not Now")
         dialog.add_response("setup", "Set Up")
         dialog.set_response_appearance("setup", Adw.ResponseAppearance.SUGGESTED)
         dialog.set_default_response("setup")
-        dialog.connect("response", self._on_shortcut_prompt_response)
+        dialog.connect("response", self._on_shortcut_prompt_response, shortcut_check, autostart_check)
         dialog.present(self)
         return GLib.SOURCE_REMOVE
 
-    def _on_shortcut_prompt_response(self, dialog, response):
+    def _on_shortcut_prompt_response(self, dialog, response, shortcut_check, autostart_check):
         self._prefs_open = False
         if response != "setup":
             return
-        from castword.shortcuts import find_conflicting_shortcut, format_binding, DEFAULT_BINDING
-        from castword.autostart import set_autostart_enabled
-        set_autostart_enabled(True)
-        conflict_path, conflict_name = find_conflicting_shortcut(DEFAULT_BINDING)
-        if conflict_path:
-            self._show_shortcut_conflict_dialog(conflict_path, conflict_name, format_binding(DEFAULT_BINDING))
-        else:
-            self._do_register_shortcut()
+        if autostart_check.get_active():
+            from castword.autostart import set_autostart_enabled
+            set_autostart_enabled(True)
+        if shortcut_check.get_active():
+            from castword.shortcuts import find_conflicting_shortcut, format_binding, DEFAULT_BINDING
+            conflict_path, conflict_name = find_conflicting_shortcut(DEFAULT_BINDING)
+            if conflict_path:
+                self._show_shortcut_conflict_dialog(conflict_path, conflict_name, format_binding(DEFAULT_BINDING))
+            else:
+                self._do_register_shortcut()
 
     def _show_shortcut_conflict_dialog(self, conflict_path: str, conflict_name: str, binding_label: str):
         self._prefs_open = True
