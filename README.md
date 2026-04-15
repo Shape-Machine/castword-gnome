@@ -40,7 +40,7 @@ yay -S castword-gnome-bin
 
 <p align="center">
   <img src="docs/screenshots/main-diff.png" width="480" alt="Main window with diff output" />
-  <img src="docs/screenshots/main-stt.png" width="480" alt="Main window — STT listening" />
+  <img src="docs/screenshots/main-stt.png" width="480" alt="Main window — STT paused" />
 </p>
 
 <p align="center">
@@ -48,6 +48,10 @@ yay -S castword-gnome-bin
   <img src="docs/screenshots/prefs-providers.png" width="320" alt="Preferences — Providers" />
   <img src="docs/screenshots/prefs-behaviour.png" width="320" alt="Preferences — Behaviour" />
   <img src="docs/screenshots/prefs-speech.png" width="320" alt="Preferences — Speech" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/about.png" width="320" alt="About dialog" />
 </p>
 
 ### From source
